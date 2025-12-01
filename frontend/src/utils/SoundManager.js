@@ -1,6 +1,7 @@
 class SoundManager {
   constructor() {
-    this.muted = false;
+    this.soundsMuted = false;
+    this.musicMuted = false;
     this.sounds = {};
     this.bgMusic = null;
     this.baseUrl = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
@@ -43,7 +44,7 @@ class SoundManager {
   }
 
   startBackgroundMusic() {
-    if (this.bgMusic && !this.muted) {
+    if (this.bgMusic && !this.musicMuted) {
       this.bgMusic.play().catch(err => {
         console.log('Background music autoplay blocked. Will play on first user interaction.');
       });
@@ -57,8 +58,12 @@ class SoundManager {
     }
   }
 
-  setMuted(muted) {
-    this.muted = muted;
+  setSoundsMuted(muted) {
+    this.soundsMuted = muted;
+  }
+
+  setMusicMuted(muted) {
+    this.musicMuted = muted;
     
     if (this.bgMusic) {
       if (muted) {
@@ -71,8 +76,14 @@ class SoundManager {
     }
   }
 
+  // Legacy method for backward compatibility
+  setMuted(muted) {
+    this.setSoundsMuted(muted);
+    this.setMusicMuted(muted);
+  }
+
   play(soundName) {
-    if (this.muted || !this.sounds[soundName]) return;
+    if (this.soundsMuted || !this.sounds[soundName]) return;
 
     try {
       const sound = this.sounds[soundName].cloneNode();

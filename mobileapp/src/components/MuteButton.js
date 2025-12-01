@@ -1,44 +1,74 @@
 import React, { useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 
 export default function MuteButton({ soundManager }) {
-  const [isMuted, setIsMuted] = useState(false);
+  const [soundsMuted, setSoundsMuted] = useState(false);
+  const [musicMuted, setMusicMuted] = useState(false);
 
-  const toggleMute = () => {
-    const newMuted = !isMuted;
-    setIsMuted(newMuted);
-    soundManager.setMuted(newMuted);
+  const toggleSounds = () => {
+    const newMuted = !soundsMuted;
+    setSoundsMuted(newMuted);
+    soundManager.setSoundsMuted(newMuted);
     if (!newMuted) {
       soundManager.play('click');
     }
   };
 
+  const toggleMusic = () => {
+    const newMuted = !musicMuted;
+    setMusicMuted(newMuted);
+    soundManager.setMusicMuted(newMuted);
+  };
+
   return (
-    <TouchableOpacity
-      style={styles.button}
-      onPress={toggleMute}
-    >
-      <Text style={styles.icon}>{isMuted ? '🔇' : '📳'}</Text>
-    </TouchableOpacity>
+    <View style={styles.container}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={toggleSounds}
+      >
+        <Text style={styles.icon}>{soundsMuted ? '🔇' : '🔊'}</Text>
+        <Text style={styles.label}>SFX</Text>
+      </TouchableOpacity>
+      
+      <TouchableOpacity
+        style={[styles.button, styles.musicButton]}
+        onPress={toggleMusic}
+      >
+        <Text style={styles.icon}>{musicMuted ? '🎵' : '🎵'}</Text>
+        <Text style={styles.label}>{musicMuted ? 'OFF' : 'ON'}</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
+  container: {
     position: 'absolute',
     bottom: 30,
     right: 20,
-    width: 50,
-    height: 50,
+    zIndex: 1000,
+  },
+  button: {
+    width: 60,
+    height: 60,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 25,
+    borderRadius: 30,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
-    zIndex: 1000,
+    marginBottom: 10,
+  },
+  musicButton: {
+    backgroundColor: 'rgba(147, 51, 234, 0.3)',
   },
   icon: {
-    fontSize: 24,
+    fontSize: 20,
+  },
+  label: {
+    fontSize: 9,
+    color: 'white',
+    fontWeight: 'bold',
+    marginTop: 2,
   },
 });

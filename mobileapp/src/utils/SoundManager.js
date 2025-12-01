@@ -4,9 +4,12 @@ import { SOCKET_URL } from '@env';
 
 class SoundManager {
   constructor() {
-    this.muted = false;
+    this.soundsMuted = false;
+    this.musicMuted = false;
     this.sounds = {};
     this.bgMusic = null;
+    this.isReady = false;
+    this.shouldAutoPlay = false;
     this.baseUrl = SOCKET_URL || 'http://localhost:3001';
     this.initAudio();
   }
@@ -23,6 +26,12 @@ class SoundManager {
       // Preload all sounds
       await this.loadSounds();
       await this.loadBackgroundMusic();
+      
+      // Auto-start background music after loading
+      this.isReady = true;
+      if (this.shouldAutoPlay && !this.musicMuted) {
+        await this.startBackgroundMusic();
+      }
     } catch (error) {
       console.log('Error initializing audio:', error);
     }
@@ -76,9 +85,17 @@ class SoundManager {
   }
 
   async startBackgroundMusic() {
-    if (this.bgMusic && !this.muted) {
+    this.shouldAutoPlay = true;
+    
+    if (!this.isReady) {
+      // Will auto-play once ready
+      return;
+    }
+    
+    if (this.bgMusic && !this.musicMuted) {
       try {
         await this.bgMusic.playAsync();
+        console.log('Background music started');
       } catch (error) {
         console.log('Error starting background music:', error);
       }
@@ -95,8 +112,12 @@ class SoundManager {
     }
   }
 
-  async setMuted(muted) {
-    this.muted = muted;
+  setSoundsMuted(muted) {
+    this.soundsMuted = muted;
+  }
+
+  async setMusicMuted(muted) {
+    this.musicMuted = muted;
     
     if (this.bgMusic) {
       try {
@@ -111,8 +132,14 @@ class SoundManager {
     }
   }
 
+  // Legacy method for backward compatibility
+  async setMuted(muted) {
+    this.setSoundsMuted(muted);
+    await this.setMusicMuted(muted);
+  }
+
   async play(soundName) {
-    if (this.muted) return;
+    if (this.soundsMuted) return;
 
     try {
       // Play haptic feedback along with sound
