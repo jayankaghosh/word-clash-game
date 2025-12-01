@@ -283,8 +283,38 @@ io.on('connection', (socket) => {
     // Battle Royale: Check if this combination was already used
     if (game.gameType === 'battle-royale' && game.usedLetterCombinations.has(letterCombo)) {
       io.to(gameId).emit('combination-used', { startLetter, endLetter });
-      // Restart letter selection
-      setTimeout(() => startRound(gameId), 2000);
+      
+      // Clear current round data and restart letter selection
+      game.currentRound.startLetter = null;
+      game.currentRound.endLetter = null;
+      game.currentRound.phase = 'letter-input';
+      
+      // Restart letter selection after 2 seconds
+      setTimeout(() => {
+        // Notify players to select letters again
+        const roles = [game.currentRound.startPlayer, game.currentRound.endPlayer];
+        const player1 = game.players.find(p => p.id === roles[0]);
+        const player2 = game.players.find(p => p.id === roles[1]);
+        
+        if (player1 && player2) {
+          io.to(player1.socketId).emit('round-started', { role: 'start' });
+          io.to(player2.socketId).emit('round-started', { role: 'end' });
+        }
+        
+        // Set new letter selection timeout
+        game.currentRound.letterTimeout = setTimeout(() => {
+          if (game.currentRound && game.currentRound.phase === 'letter-input') {
+            // Auto-select random letter if no letter chosen
+            if (!game.currentRound.startLetter) {
+              game.currentRound.startLetter = getRandomLetter();
+            }
+            if (!game.currentRound.endLetter) {
+              game.currentRound.endLetter = getRandomLetter();
+            }
+            revealLetters(gameId);
+          }
+        }, (game.letterTime * 1000) + 500);
+      }, 2000);
       return;
     }
     
@@ -292,8 +322,37 @@ io.on('connection', (socket) => {
     if (!hasValidWords(startLetter, endLetter, game.usedWords)) {
       io.to(gameId).emit('no-valid-words', { startLetter, endLetter });
       
-      // Restart round after 2 seconds
-      setTimeout(() => startRound(gameId), 2000);
+      // Clear current round data and restart letter selection immediately
+      game.currentRound.startLetter = null;
+      game.currentRound.endLetter = null;
+      game.currentRound.phase = 'letter-input';
+      
+      // Restart round after 2 seconds to show the message
+      setTimeout(() => {
+        // Notify players to select letters again
+        const roles = [game.currentRound.startPlayer, game.currentRound.endPlayer];
+        const player1 = game.players.find(p => p.id === roles[0]);
+        const player2 = game.players.find(p => p.id === roles[1]);
+        
+        if (player1 && player2) {
+          io.to(player1.socketId).emit('round-started', { role: 'start' });
+          io.to(player2.socketId).emit('round-started', { role: 'end' });
+        }
+        
+        // Set new letter selection timeout
+        game.currentRound.letterTimeout = setTimeout(() => {
+          if (game.currentRound && game.currentRound.phase === 'letter-input') {
+            // Auto-select random letter if no letter chosen
+            if (!game.currentRound.startLetter) {
+              game.currentRound.startLetter = getRandomLetter();
+            }
+            if (!game.currentRound.endLetter) {
+              game.currentRound.endLetter = getRandomLetter();
+            }
+            revealLetters(gameId);
+          }
+        }, (game.letterTime * 1000) + 500);
+      }, 2000);
       return;
     }
 
