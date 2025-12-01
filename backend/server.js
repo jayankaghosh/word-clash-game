@@ -124,23 +124,28 @@ io.on('connection', (socket) => {
   // Send game configuration to client on connect
   socket.emit('game-config', gameConfig);
 
-  socket.on('create-game', ({ playerName, roundsToWin, letterTime, wordTime }) => {
+  socket.on('create-game', ({ playerName, roundsToWin, letterTime, wordTime, gameType }) => {
     const gameId = generateGameCode();
     const game = {
-      gameId,
-      roundsToWin: parseInt(roundsToWin) || gameConfig.defaultRounds,
-      letterTime: parseInt(letterTime) || gameConfig.defaultLetterTime,
-      wordTime: parseInt(wordTime) || gameConfig.defaultWordTime,
+      gameId: gameId,
       players: [{
         id: socket.id,
         name: playerName,
         score: 0,
         socketId: socket.id
       }],
-      usedWords: new Set(),
-      currentRound: null,
       status: 'waiting',
-      creator: socket.id
+      gameType: gameType || 'normal',
+      roundsToWin: roundsToWin || 5,
+      letterTime: letterTime || 5,
+      wordTime: wordTime || 30,
+      currentRound: 0,
+      creator: socket.id,
+      usedWords: new Set(),
+      usedLetterCombinations: new Set(),
+      // Battle Royale specific
+      currentTurn: null, // socketId of player whose turn it is
+      roundWords: [] // words submitted in current round
     };
 
     games.set(gameId, game);
@@ -272,6 +277,15 @@ io.on('connection', (socket) => {
     }
 
     const { startLetter, endLetter } = game.currentRound;
+    const letterCombo = `${startLetter}-${endLetter}`;
+    
+    // Battle Royale: Check if this combination was already used
+    if (game.gameType === 'battle-royale' && game.usedLetterCombinations.has(letterCombo)) {
+      io.to(gameId).emit('combination-used', { startLetter, endLetter });
+      // Restart letter selection
+      setTimeout(() => startRound(gameId), 2000);
+      return;
+    }
     
     // Check if valid words exist
     if (!hasValidWords(startLetter, endLetter, game.usedWords)) {
@@ -282,8 +296,24 @@ io.on('connection', (socket) => {
       return;
     }
 
+    // Mark combination as used in battle royale
+    if (game.gameType === 'battle-royale') {
+      game.usedLetterCombinations.add(letterCombo);
+      game.roundWords = []; // Reset words for this round
+      game.currentTurn = game.currentRound.startPlayer; // Creator goes first
+    }
+
     game.currentRound.phase = 'word-input';
     io.to(gameId).emit('letters-revealed', { startLetter, endLetter });
+
+    // Battle Royale: Notify whose turn it is
+    if (game.gameType === 'battle-royale') {
+      const currentPlayer = game.players.find(p => p.id === game.currentTurn);
+      io.to(gameId).emit('turn-update', { 
+        currentTurn: currentPlayer?.name,
+        roundWords: game.roundWords 
+      });
+    }
 
     // Auto-advance after wordTime seconds - store timeout
     game.currentRound.wordTimeout = setTimeout(() => {
@@ -300,24 +330,90 @@ io.on('connection', (socket) => {
     if (!game || !game.currentRound || game.currentRound.phase !== 'word-input') return;
 
     const { startLetter, endLetter } = game.currentRound;
-    const validation = isValidWord(word, startLetter, endLetter, game.usedWords);
+    
+    // Normal Mode: First valid word wins
+    if (game.gameType === 'normal') {
+      const validation = isValidWord(word, startLetter, endLetter, game.usedWords);
 
-    if (!validation.valid) {
-      socket.emit('invalid-word', { reason: validation.reason });
+      if (!validation.valid) {
+        socket.emit('invalid-word', { reason: validation.reason });
+        return;
+      }
+
+      // Valid word - this player wins the round
+      game.usedWords.add(word.toLowerCase());
+      game.currentRound.winner = socket.id;
+      game.currentRound.winningWord = word;
+
+      // Update score
+      const player = game.players.find(p => p.id === socket.id);
+      if (player) player.score++;
+
+      // End the round immediately
+      endRound(gameId);
       return;
     }
 
-    // Valid word - this player wins the round
-    game.usedWords.add(word.toLowerCase());
-    game.currentRound.winner = socket.id;
-    game.currentRound.winningWord = word;
+    // Battle Royale Mode: Turn-based word submission
+    if (game.gameType === 'battle-royale') {
+      // Check if it's this player's turn
+      if (socket.id !== game.currentTurn) {
+        socket.emit('error', { message: 'Not your turn!' });
+        return;
+      }
 
-    // Update score
-    const player = game.players.find(p => p.id === socket.id);
-    if (player) player.score++;
+      const validation = isValidWord(word, startLetter, endLetter, game.usedWords);
 
-    // End the round immediately
-    endRound(gameId);
+      if (!validation.valid) {
+        // Let player retry with different word
+        socket.emit('invalid-word', { reason: validation.reason });
+        return;
+      }
+
+      // Valid word - add to round words and switch turn
+      const w = word.toLowerCase();
+      game.usedWords.add(w);
+      game.roundWords.push({ player: game.players.find(p => p.id === socket.id)?.name, word: w });
+
+      // Reset timer for next player
+      if (game.currentRound.wordTimeout) {
+        clearTimeout(game.currentRound.wordTimeout);
+      }
+
+      // Switch turn to other player
+      const otherPlayer = game.players.find(p => p.id !== socket.id);
+      game.currentTurn = otherPlayer.id;
+
+      // Broadcast word submitted and turn update
+      io.to(gameId).emit('word-accepted', { 
+        word: w, 
+        player: game.players.find(p => p.id === socket.id)?.name,
+        roundWords: game.roundWords 
+      });
+
+      const currentPlayer = game.players.find(p => p.id === game.currentTurn);
+      io.to(gameId).emit('turn-update', { 
+        currentTurn: currentPlayer?.name,
+        roundWords: game.roundWords 
+      });
+
+      // Start timer for next player
+      game.currentRound.wordTimeout = setTimeout(() => {
+        if (game.currentRound && game.currentRound.phase === 'word-input') {
+          // Current player ran out of time - other player wins
+          const timedOutPlayer = game.players.find(p => p.id === game.currentTurn);
+          const winningPlayer = game.players.find(p => p.id !== game.currentTurn);
+          
+          game.currentRound.winner = winningPlayer.id;
+          game.currentRound.loser = game.currentTurn;
+          game.currentRound.winningReason = `${timedOutPlayer?.name} ran out of time`;
+          
+          if (winningPlayer) winningPlayer.score++;
+          
+          endRound(gameId);
+        }
+      }, game.wordTime * 1000);
+    }
   });
 
   function endRound(gameId) {
@@ -341,11 +437,23 @@ io.on('connection', (socket) => {
 
     const winner = game.players.find(p => p.id === round.winner);
     
-    io.to(gameId).emit('round-ended', {
-      winner: winner ? winner.name : null,
-      word: round.winningWord || null,
-      scores: game.players.map(p => ({ name: p.name, score: p.score }))
-    });
+    // Battle Royale: Include all words and winning reason
+    if (game.gameType === 'battle-royale') {
+      io.to(gameId).emit('round-ended', {
+        winner: winner ? winner.name : null,
+        word: round.winningWord || null,
+        winningReason: round.winningReason || `${winner?.name} outlasted opponent`,
+        roundWords: game.roundWords,
+        scores: game.players.map(p => ({ name: p.name, score: p.score }))
+      });
+    } else {
+      // Normal mode
+      io.to(gameId).emit('round-ended', {
+        winner: winner ? winner.name : null,
+        word: round.winningWord || null,
+        scores: game.players.map(p => ({ name: p.name, score: p.score }))
+      });
+    }
 
     // Check if game is over
     const gameWinner = game.players.find(p => p.score >= game.roundsToWin);

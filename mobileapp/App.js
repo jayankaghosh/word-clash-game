@@ -129,7 +129,7 @@ export default function App() {
     }
     
     console.log('Emitting create-game event');
-    socket.emit('create-game', { playerName: name, roundsToWin: rounds, letterTime, wordTime });
+    socket.emit('create-game', { playerName: name, roundsToWin: rounds, letterTime, wordTime, gameType });
   };
 
   const handleJoinGame = async (name, gameId) => {

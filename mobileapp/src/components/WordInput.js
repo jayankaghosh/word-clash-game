@@ -2,15 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import Timer from './Timer';
 
-export default function WordInput({ startLetter, endLetter, socket, soundManager, wordTime }) {
+export default function WordInput({ startLetter, endLetter, socket, soundManager, wordTime, disabled }) {
   const [word, setWord] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const inputRef = useRef(null);
 
+  // Auto-focus on mount and when disabled state changes
   useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 300);
-  }, []);
+    if (!disabled) {
+      setTimeout(() => inputRef.current?.focus(), 300);
+    }
+  }, [disabled]);
 
   useEffect(() => {
     if (!socket) return;
@@ -24,15 +27,30 @@ export default function WordInput({ startLetter, endLetter, socket, soundManager
       
       // Clear error after 3 seconds
       setTimeout(() => setErrorMessage(''), 3000);
-      setTimeout(() => inputRef.current?.focus(), 100);
+      // Refocus after a short delay
+      setTimeout(() => inputRef.current?.focus(), 150);
+    };
+
+    // Listen for word-accepted in battle royale to refocus if still your turn
+    const handleWordAccepted = () => {
+      setSubmitted(false);
+      setWord('');
+      // Refocus after a short delay if not disabled
+      setTimeout(() => {
+        if (!disabled) {
+          inputRef.current?.focus();
+        }
+      }, 150);
     };
 
     socket.on('invalid-word', handleInvalidWord);
+    socket.on('word-accepted', handleWordAccepted);
 
     return () => {
       socket.off('invalid-word', handleInvalidWord);
+      socket.off('word-accepted', handleWordAccepted);
     };
-  }, [socket, soundManager]);
+  }, [socket, soundManager, disabled]);
 
   const handleSubmit = () => {
     if (!word.trim() || submitted) return;
@@ -61,19 +79,19 @@ export default function WordInput({ startLetter, endLetter, socket, soundManager
       <View style={styles.inputRow}>
         <TextInput
           ref={inputRef}
-          style={[styles.input, submitted && styles.inputDisabled]}
+          style={[styles.input, (submitted || disabled) && styles.inputDisabled]}
           value={word}
-          onChangeText={setWord}
-          placeholder="Type your word"
+          onChangeText={(text) => setWord(text.toUpperCase())}
+          placeholder={disabled ? "Not your turn..." : "Type your word"}
           placeholderTextColor="rgba(255, 255, 255, 0.3)"
           autoCapitalize="characters"
-          editable={!submitted}
+          editable={!submitted && !disabled}
           onSubmitEditing={handleSubmit}
         />
         <TouchableOpacity
-          style={[styles.submitButton, (!word.trim() || submitted) && styles.submitButtonDisabled]}
+          style={[styles.submitButton, (!word.trim() || submitted || disabled) && styles.submitButtonDisabled]}
           onPress={handleSubmit}
-          disabled={!word.trim() || submitted}
+          disabled={!word.trim() || submitted || disabled}
         >
           <Text style={styles.submitButtonText}>➤</Text>
         </TouchableOpacity>

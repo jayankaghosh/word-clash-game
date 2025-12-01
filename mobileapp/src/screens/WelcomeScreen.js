@@ -11,6 +11,7 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
   const [rounds, setRounds] = useState(gameConfig?.defaultRounds || 5);
   const [letterTime, setLetterTime] = useState(gameConfig?.defaultLetterTime || 5);
   const [wordTime, setWordTime] = useState(gameConfig?.defaultWordTime || 30);
+  const [gameType, setGameType] = useState('normal');
   const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   useEffect(() => {
@@ -19,12 +20,21 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
     }
   }, [savedName, name]);
 
+  // Update defaults when gameConfig loads
+  useEffect(() => {
+    if (gameConfig) {
+      setRounds(gameConfig.defaultRounds || 5);
+      setLetterTime(gameConfig.defaultLetterTime || 5);
+      setWordTime(gameConfig.defaultWordTime || 30);
+    }
+  }, [gameConfig]);
+
   const handleSubmit = () => {
     if (!name.trim()) return;
 
     if (mode === 'create') {
       soundManager?.play('success');
-      onCreateGame(name.trim(), rounds, letterTime, wordTime);
+      onCreateGame(name.trim(), rounds, letterTime, wordTime, gameType);
     } else if (mode === 'join') {
       if (!gameCode.trim()) return;
       soundManager?.play('success');
@@ -99,6 +109,44 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
 
             {mode === 'create' && (
               <View style={styles.modeContainer}>
+                <Text style={styles.label}>Game Type</Text>
+                <View style={styles.gameTypeContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.gameTypeButton,
+                      gameType === 'normal' && styles.gameTypeButtonActive
+                    ]}
+                    onPress={() => {
+                      soundManager?.play('click');
+                      setGameType('normal');
+                    }}
+                  >
+                    <Text style={[
+                      styles.gameTypeButtonText,
+                      gameType === 'normal' && styles.gameTypeButtonTextActive
+                    ]}>
+                      🎮 Normal
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.gameTypeButton,
+                      gameType === 'battle-royale' && styles.gameTypeButtonActive
+                    ]}
+                    onPress={() => {
+                      soundManager?.play('click');
+                      setGameType('battle-royale');
+                    }}
+                  >
+                    <Text style={[
+                      styles.gameTypeButtonText,
+                      gameType === 'battle-royale' && styles.gameTypeButtonTextActive
+                    ]}>
+                      ⚔️ Battle Royale
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
                 <Text style={styles.label}>Rounds to Win</Text>
                 <View style={styles.roundsContainer}>
                   {(gameConfig?.roundsOptions || [3, 5, 7, 10]).map((num) => (
@@ -409,6 +457,32 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   timeButtonTextActive: {
+    color: '#fff',
+  },
+  gameTypeContainer: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  gameTypeButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 10,
+    padding: 15,
+    flex: 1,
+    alignItems: 'center',
+  },
+  gameTypeButtonActive: {
+    backgroundColor: '#7c3aed',
+    borderColor: '#7c3aed',
+  },
+  gameTypeButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  gameTypeButtonTextActive: {
     color: '#fff',
   },
   actionButtons: {

@@ -103,6 +103,9 @@ export default function LobbyScreen({ gameData, playerName, onStartGame, socket,
             <Text style={styles.infoLabel}>🏆 Game Settings</Text>
           </View>
           <Text style={styles.infoValue}>
+            <Text style={styles.highlight}>{gameData.gameType === 'battle-royale' ? '⚔️ Battle Royale' : '🎮 Normal'}</Text> Mode
+          </Text>
+          <Text style={styles.infoValue}>
             First to <Text style={styles.highlight}>{gameData.roundsToWin}</Text> wins
           </Text>
           <Text style={[styles.infoValue, { marginTop: 8, fontSize: 12 }]}>

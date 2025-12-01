@@ -71,6 +71,9 @@ function Lobby({ gameData, playerName, onStartGame, socket, soundManager, onGame
           <h3 className="text-lg font-semibold text-white">Game Settings</h3>
         </div>
         <p className="text-blue-200 mb-2">
+          <span className="font-bold text-yellow-400">{gameData.gameType === 'battle-royale' ? '⚔️ Battle Royale' : '🎮 Normal'}</span> Mode
+        </p>
+        <p className="text-blue-200 mb-2">
           First to <span className="font-bold text-yellow-400">{gameData.roundsToWin}</span> wins
         </p>
         <p className="text-blue-200 text-sm">

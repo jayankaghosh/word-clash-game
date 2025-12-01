@@ -35,36 +35,22 @@
             border-bottom: 3px solid #f59e0b;
             padding-bottom: 10px;
         }
-        h3 {
-            color: #7c3aed;
-            font-size: 1.3em;
-            margin-top: 20px;
-            margin-bottom: 10px;
-        }
         .intro {
             text-align: center;
             font-size: 1.2em;
             color: #6b7280;
             margin-bottom: 30px;
         }
-        .step {
+        .mode-box {
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
             padding: 20px;
-            margin: 15px 0;
+            margin: 20px 0;
             border-radius: 15px;
             border-left: 5px solid #f59e0b;
         }
-        .step-number {
-            display: inline-block;
-            background: #f59e0b;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            text-align: center;
-            line-height: 30px;
-            font-weight: bold;
-            margin-right: 10px;
+        .mode-box.battle-royale {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.2));
+            border-left: 5px solid #8b5cf6;
         }
         .highlight {
             background: #fef3c7;
@@ -73,23 +59,12 @@
             font-weight: 600;
             color: #92400e;
         }
-        ul {
+        ul, ol {
             margin: 10px 0;
             padding-left: 25px;
         }
         li {
             margin: 8px 0;
-        }
-        .tip {
-            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
-            border-left: 4px solid #3b82f6;
-        }
-        .tip-icon {
-            font-size: 1.5em;
-            margin-right: 10px;
         }
         .rules-box {
             background: #f3f4f6;
@@ -97,9 +72,12 @@
             border-radius: 12px;
             margin: 20px 0;
         }
-        .emoji {
-            font-size: 1.5em;
-            margin-right: 8px;
+        .tip {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #3b82f6;
         }
         strong {
             color: #7c3aed;
@@ -111,94 +89,91 @@
         <h1>⚔️ Word Clash</h1>
         <p class="intro">A fast-paced multiplayer word game where creativity meets competition!</p>
 
-        <h2>🎮 Game Overview</h2>
-        <p>Word Clash is a 2-player battle of vocabulary and quick thinking. Players compete to create the longest valid word using given starting and ending letters. The first to win the required number of rounds takes home the glory!</p>
+        <h2>� Game Modes</h2>
+        <p>Choose between two exciting game modes when creating a game:</p>
+        <ul>
+            <li><strong>🎮 Normal Mode:</strong> Race against your opponent to find the first valid word</li>
+            <li><strong>⚔️ Battle Royale Mode:</strong> Take turns submitting words until someone can't continue</li>
+        </ul>
 
-        <h2>📖 How to Play</h2>
-        
-        <div class="step">
-            <span class="step-number">1</span>
-            <strong>Start or Join a Game</strong>
-            <ul>
-                <li><span class="emoji">🎮</span><strong>Create New Game:</strong> Set your preferred game settings (rounds, time limits) and share the game code with a friend</li>
-                <li><span class="emoji">⚔️</span><strong>Join Game:</strong> Enter the game code provided by your friend</li>
-            </ul>
+        <h2>🎮 Normal Mode - How to Play</h2>
+        <div class="mode-box">
+            <ol>
+                <li><strong>Choose Your Letters:</strong> Each player selects either the starting or ending letter</li>
+                <li><strong>Race to Find a Word:</strong> Both players compete to type a valid English word first</li>
+                <li><strong>First Valid Word Wins:</strong> The first player to submit a correct word wins the round</li>
+                <li><strong>Win the Game:</strong> Be the first to win the required number of rounds!</li>
+            </ol>
         </div>
 
-        <div class="step">
-            <span class="step-number">2</span>
-            <strong>Choose Your Letters</strong>
-            <ul>
-                <li>Each round, players take turns being the <span class="highlight">START player</span> or <span class="highlight">END player</span></li>
-                <li><strong>START player:</strong> Chooses the first letter of the word</li>
-                <li><strong>END player:</strong> Chooses the last letter of the word</li>
-                <li>⏱️ You have limited time to pick your letter!</li>
-            </ul>
-        </div>
-
-        <div class="step">
-            <span class="step-number">3</span>
-            <strong>Form Your Word</strong>
-            <ul>
-                <li>Once both letters are revealed, <strong>both players</strong> race to create a word</li>
-                <li>Your word must <strong>start</strong> with the chosen START letter</li>
-                <li>Your word must <strong>end</strong> with the chosen END letter</li>
-                <li>⏱️ Submit your word before time runs out!</li>
-            </ul>
-        </div>
-
-        <div class="step">
-            <span class="step-number">4</span>
-            <strong>Win the Round</strong>
-            <ul>
-                <li>🏆 The player with the <strong>longest valid word</strong> wins the round</li>
-                <li>If both words are the same length, it's a <strong>tie</strong> (no points awarded)</li>
-                <li>Invalid words or no submissions result in <strong>no points</strong></li>
-            </ul>
-        </div>
-
-        <div class="step">
-            <span class="step-number">5</span>
-            <strong>Win the Game</strong>
-            <ul>
-                <li>First player to win the required number of rounds wins the game!</li>
-                <li>🎉 Victory celebration with confetti awaits the champion!</li>
-            </ul>
-        </div>
-
-        <h2>📜 Rules & Requirements</h2>
-        <div class="rules-box">
-            <ul>
-                <li><strong>Minimum Length:</strong> Words must be at least <span class="highlight">3 letters long</span></li>
-                <li><strong>Maximum Length:</strong> Words cannot exceed <span class="highlight">15 letters</span></li>
-                <li><strong>Valid Words:</strong> Only words from the Oxford English Dictionary are accepted</li>
-                <li><strong>Letter Matching:</strong> Your word MUST start and end with the specified letters</li>
-                <li><strong>Time Limits:</strong> 
+        <h2>⚔️ Battle Royale Mode - How to Play</h2>
+        <div class="mode-box battle-royale">
+            <ol>
+                <li><strong>Choose Your Letters:</strong> Same as Normal mode - select starting and ending letters</li>
+                <li><strong>Creator Goes First:</strong> The game creator must submit the first valid word</li>
+                <li><strong>Timer Resets:</strong> After each valid word, the timer resets to full time</li>
+                <li><strong>Take Turns:</strong> Players alternate submitting words for the same letter combination</li>
+                <li><strong>No Word Repeats:</strong> Words can only be used once during the ENTIRE game</li>
+                <li><strong>Keep Going:</strong> Players continue alternating until one player:
                     <ul>
-                        <li>Letter selection: 3-15 seconds (configurable)</li>
-                        <li>Word formation: 15-120 seconds (configurable)</li>
+                        <li>Runs out of time ⏱️</li>
+                        <li>Can't think of a valid word (can retry invalid words)</li>
                     </ul>
                 </li>
+                <li><strong>Win the Round:</strong> If your opponent fails, you win the round!</li>
+                <li><strong>⚠️ Special Rule:</strong> The same letter combination (e.g., A→T) cannot be reused in future rounds. If it's randomly selected again, players must choose new letters</li>
+            </ol>
+        </div>
+
+        <h2>📜 Word Requirements</h2>
+        <div class="rules-box">
+            <ul>
+                <li><strong>Minimum Length:</strong> At least <span class="highlight">3 letters</span></li>
+                <li><strong>Maximum Length:</strong> No more than <span class="highlight">15 letters</span></li>
+                <li><strong>Valid Dictionary Words:</strong> Must be a real English word</li>
+                <li><strong>Must Start:</strong> With the chosen starting letter</li>
+                <li><strong>Must End:</strong> With the chosen ending letter</li>
+                <li><strong>No Duplicates:</strong> Cannot be used more than once per game (especially important in Battle Royale!)</li>
             </ul>
         </div>
 
-        <h2>💡 Pro Tips</h2>
+        <h2>💡 Tips & Strategy</h2>
+        
         <div class="tip">
-            <span class="tip-icon">💭</span><strong>Strategy:</strong> When choosing letters, think about common word patterns. Letters like E, S, T, and R are versatile!
+            <strong>🎮 Normal Mode Tips:</strong>
+            <ul>
+                <li>Speed is key - sometimes simple words win!</li>
+                <li>Think of multiple options quickly</li>
+                <li>Common letter combinations usually have many words</li>
+            </ul>
         </div>
+
         <div class="tip">
-            <span class="tip-icon">⚡</span><strong>Speed:</strong> Sometimes a shorter word submitted quickly beats a longer word that times out!
+            <strong>⚔️ Battle Royale Mode Tips:</strong>
+            <ul>
+                <li>Remember ALL previously used words throughout the game</li>
+                <li>Start with simple words to maintain momentum</li>
+                <li>Save harder/longer words for later in the round</li>
+                <li>Watch the displayed words list to avoid repetition</li>
+                <li>Track which letter combinations have been used</li>
+                <li>Think ahead while your opponent is taking their turn</li>
+                <li>Don't panic when timer resets - you get full time each turn</li>
+            </ul>
         </div>
+
         <div class="tip">
-            <span class="tip-icon">📚</span><strong>Vocabulary:</strong> The more words you know, the better your chances. Expand your vocabulary to dominate!
-        </div>
-        <div class="tip">
-            <span class="tip-icon">🎯</span><strong>Practice:</strong> Play multiple rounds to learn common letter combinations and improve your reaction time.
+            <strong>📚 General Tips:</strong>
+            <ul>
+                <li>Expand your vocabulary - more words = better chances</li>
+                <li>Practice makes perfect!</li>
+                <li>Letters like E, S, T, R are very versatile</li>
+            </ul>
         </div>
 
         <h2>🎨 Game Settings</h2>
         <p>When creating a game, customize your experience:</p>
         <ul>
+            <li><strong>Game Type:</strong> Normal or Battle Royale</li>
             <li><strong>Rounds to Win:</strong> 3, 5, 7, or 10 rounds</li>
             <li><strong>Letter Time:</strong> 3, 5, 7, 10, or 15 seconds</li>
             <li><strong>Word Time:</strong> 15, 20, 30, 45, 60, 90, or 120 seconds</li>
@@ -207,7 +182,7 @@
         <h2>🔊 Sound Controls</h2>
         <p>Look for the audio controls in the corner of your screen:</p>
         <ul>
-            <li><strong>🔊 Sound Effects Button:</strong> Toggle game sound effects (clicks, wins, losses)</li>
+            <li><strong>🔊 Sound Effects Button:</strong> Toggle game sound effects</li>
             <li><strong>🎵 Music Button:</strong> Toggle background music independently</li>
         </ul>
 

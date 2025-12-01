@@ -12,6 +12,9 @@ function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
   const [role, setRole] = useState(null); // 'start' or 'end'
   const [letters, setLetters] = useState({ start: null, end: null });
   const [roundResult, setRoundResult] = useState(null);
+  const [currentTurn, setCurrentTurn] = useState(null); // Battle Royale: whose turn
+  const [roundWords, setRoundWords] = useState([]); // Battle Royale: words in this round
+  const [timerKey, setTimerKey] = useState(0); // Key to force timer reset
   const [gameResult, setGameResult] = useState(null);
   const [scores, setScores] = useState([]);
   const [notification, setNotification] = useState('');
@@ -32,6 +35,9 @@ function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
       setPhase('letters-revealed');
       soundManager.play('reveal');
       
+      // Reset timer key for new round
+      setTimerKey(prev => prev + 1);
+      
       setTimeout(() => {
         setPhase('word-input');
       }, 2000);
@@ -49,10 +55,34 @@ function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
       setTimeout(() => setNotification(''), 2000);
     });
 
-    socket.on('round-ended', ({ winner, word, scores }) => {
-      setRoundResult({ winner, word });
+    // Battle Royale events
+    socket.on('turn-update', ({ currentTurn, roundWords }) => {
+      setCurrentTurn(currentTurn);
+      setRoundWords(roundWords || []);
+    });
+
+    socket.on('word-accepted', ({ word, player, roundWords }) => {
+      setNotification(`${player} submitted: ${word}`);
+      setRoundWords(roundWords || []);
+      soundManager.play('submit');
+      setTimeout(() => setNotification(''), 2000);
+      
+      // Reset timer by changing key
+      setTimerKey(prev => prev + 1);
+    });
+
+    socket.on('combination-used', ({ startLetter, endLetter }) => {
+      setNotification(`${startLetter}-${endLetter} already used! Choosing new letters...`);
+      soundManager.play('error');
+      setTimeout(() => setNotification(''), 2000);
+    });
+
+    socket.on('round-ended', ({ winner, word, scores, roundWords, winningReason }) => {
+      setRoundResult({ winner, word, roundWords, winningReason });
       setScores(scores);
       setPhase('round-end');
+      setCurrentTurn(null);
+      setRoundWords([]);
       
       if (winner === playerName) {
         soundManager.play('win');
@@ -171,13 +201,51 @@ function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
         )}
 
         {phase === 'word-input' && (
-          <WordInput 
-            startLetter={letters.start}
-            endLetter={letters.end}
-            socket={socket}
-            soundManager={soundManager}
-            wordTime={gameData.wordTime || 30}
-          />
+          <div>
+            {/* Battle Royale: Turn indicator and words list */}
+            {gameData.gameType === 'battle-royale' && (
+              <div className="mb-6">
+                <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-4">
+                  <div className="text-center mb-4">
+                    {currentTurn === playerName ? (
+                      <div className="text-2xl font-bold text-yellow-400">🎯 Your Turn!</div>
+                    ) : (
+                      <div className="text-xl font-medium text-blue-200">
+                        Waiting for {currentTurn}...
+                      </div>
+                    )}
+                  </div>
+                  
+                  {roundWords.length > 0 && (
+                    <div>
+                      <div className="text-sm text-white/70 mb-2">Words submitted this round:</div>
+                      <div className="flex flex-wrap gap-2">
+                        {roundWords.map((item, idx) => (
+                          <div 
+                            key={idx}
+                            className="bg-gradient-to-r from-purple-500 to-indigo-600 px-4 py-2 rounded-lg shadow-md"
+                          >
+                            <div className="text-xs text-white/70">{item.player}</div>
+                            <div className="text-lg font-bold text-white">{item.word}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <WordInput 
+              key={timerKey}
+              startLetter={letters.start}
+              endLetter={letters.end}
+              socket={socket}
+              soundManager={soundManager}
+              wordTime={gameData.wordTime || 30}
+              disabled={gameData.gameType === 'battle-royale' && currentTurn !== playerName}
+            />
+          </div>
         )}
 
         {phase === 'round-end' && (

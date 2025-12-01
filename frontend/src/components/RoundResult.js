@@ -29,14 +29,38 @@ function RoundResult({ result, playerName, gameData, socket, soundManager }) {
           <h2 className={`text-4xl font-bold mb-4 ${isWinner ? 'text-yellow-400' : 'text-red-400'}`}>
             {isWinner ? 'You Won!' : 'You Lost'}
           </h2>
-          <p className="text-blue-200 text-lg mb-6">
-            <span className="font-bold text-white">{result.winner}</span> won with the word:
-          </p>
-          <div className="bg-white/10 rounded-2xl px-8 py-6 inline-block">
-            <div className="text-5xl font-bold text-white uppercase tracking-wider">
-              {result.word}
+          {gameData.gameType === 'battle-royale' ? (
+            <div className="text-center mb-6">
+              <p className="text-xl text-white/80 mb-4">{result.winningReason}</p>
+              {result.roundWords && result.roundWords.length > 0 && (
+                <div className="bg-white/10 rounded-xl p-4">
+                  <p className="text-sm text-white/70 mb-3">Words submitted this round:</p>
+                  <div className="flex flex-wrap justify-center gap-2">
+                    {result.roundWords.map((item, idx) => (
+                      <div key={idx} className="bg-gradient-to-r from-purple-500 to-indigo-600 px-4 py-2 rounded-lg shadow-md">
+                        <span className="text-xs text-white/70">{item.player}</span>
+                        <div className="text-lg font-bold text-white">{item.word}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            <>
+              <p className="text-blue-200 text-lg mb-6">
+                <span className="font-bold text-white">{result.winner}</span> won the round!
+              </p>
+              <div className="text-center mb-6">
+                <p className="text-2xl text-white mb-2">Winning Word:</p>
+                <div className="bg-white/10 rounded-2xl px-8 py-6 inline-block">
+                  <div className="text-5xl font-bold text-yellow-300 uppercase tracking-wider">
+                    {result.word}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
       

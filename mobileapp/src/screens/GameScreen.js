@@ -16,6 +16,9 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
   const [gameResult, setGameResult] = useState(null);
   const [scores, setScores] = useState([]);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [currentTurn, setCurrentTurn] = useState(null); // Battle Royale: whose turn
+  const [roundWords, setRoundWords] = useState([]); // Battle Royale: words in this round
+  const [timerKey, setTimerKey] = useState(0); // Key to force timer reset
 
   useEffect(() => {
     if (!socket) return;
@@ -32,16 +35,40 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
       setPhase('letters-revealed');
       soundManager.play('reveal');
       
+      // Reset timer key for new round
+      setTimerKey(prev => prev + 1);
+      
       // Add 2-second delay before showing word input
       setTimeout(() => {
         setPhase('word-input');
       }, 1500);
     });
 
-    socket.on('round-ended', ({ winner, word, scores: newScores }) => {
-      setRoundResult({ winner, word });
+    // Battle Royale events
+    socket.on('turn-update', ({ currentTurn, roundWords }) => {
+      setCurrentTurn(currentTurn);
+      setRoundWords(roundWords || []);
+    });
+
+    socket.on('word-accepted', ({ word, player, roundWords }) => {
+      setRoundWords(roundWords || []);
+      soundManager.play('submit');
+      
+      // Reset timer by changing key
+      setTimerKey(prev => prev + 1);
+    });
+
+    socket.on('combination-used', ({ startLetter, endLetter }) => {
+      Alert.alert('Combination Used', `${startLetter}-${endLetter} already used! Choosing new letters...`);
+      soundManager.play('error');
+    });
+
+    socket.on('round-ended', ({ winner, word, scores: newScores, roundWords, winningReason }) => {
+      setRoundResult({ winner, word, roundWords, winningReason });
       setScores(newScores);
       setPhase('round-end');
+      setCurrentTurn(null);
+      setRoundWords([]);
       
       if (winner === playerName) {
         soundManager.play('win');
@@ -71,6 +98,9 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
     return () => {
       socket.off('round-started');
       socket.off('letters-revealed');
+      socket.off('turn-update');
+      socket.off('word-accepted');
+      socket.off('combination-used');
       socket.off('round-ended');
       socket.off('game-ended');
       socket.off('game-exited');
@@ -163,13 +193,44 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
           )}
 
           {phase === 'word-input' && (
-            <WordInput 
-              startLetter={letters.start}
-              endLetter={letters.end}
-              socket={socket}
-              soundManager={soundManager}
-              wordTime={gameData.wordTime || 30}
-            />
+            <View>
+              {/* Battle Royale: Turn indicator and words list */}
+              {gameData.gameType === 'battle-royale' && (
+                <View style={styles.battleRoyaleInfo}>
+                  <View style={styles.turnIndicator}>
+                    {currentTurn === playerName ? (
+                      <Text style={styles.yourTurnText}>🎯 Your Turn!</Text>
+                    ) : (
+                      <Text style={styles.waitingTurnText}>Waiting for {currentTurn}...</Text>
+                    )}
+                  </View>
+                  
+                  {roundWords.length > 0 && (
+                    <View style={styles.wordsListContainer}>
+                      <Text style={styles.wordsListTitle}>Words submitted this round:</Text>
+                      <View style={styles.wordsList}>
+                        {roundWords.map((item, idx) => (
+                          <View key={idx} style={styles.wordItem}>
+                            <Text style={styles.wordPlayer}>{item.player}</Text>
+                            <Text style={styles.wordText}>{item.word}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  )}
+                </View>
+              )}
+
+              <WordInput 
+                key={timerKey}
+                startLetter={letters.start}
+                endLetter={letters.end}
+                socket={socket}
+                soundManager={soundManager}
+                wordTime={gameData.wordTime || 30}
+                disabled={gameData.gameType === 'battle-royale' && currentTurn !== playerName}
+              />
+            </View>
           )}
 
           {phase === 'round-end' && (
@@ -299,6 +360,59 @@ const styles = StyleSheet.create({
   },
   letterText: {
     fontSize: 56,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  battleRoyaleInfo: {
+    marginBottom: 20,
+  },
+  turnIndicator: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  yourTurnText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fbbf24',
+  },
+  waitingTurnText: {
+    fontSize: 18,
+    color: '#93c5fd',
+  },
+  wordsListContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 15,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  wordsListTitle: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 10,
+  },
+  wordsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  wordItem: {
+    backgroundColor: 'rgba(139, 92, 246, 0.8)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  wordPlayer: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  wordText: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#fff',
   },

@@ -8,6 +8,7 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
   const [rounds, setRounds] = useState(gameConfig?.defaultRounds || 5);
   const [letterTime, setLetterTime] = useState(gameConfig?.defaultLetterTime || 5);
   const [wordTime, setWordTime] = useState(gameConfig?.defaultWordTime || 30);
+  const [gameType, setGameType] = useState('normal');
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const [howToPlayContent, setHowToPlayContent] = useState('');
 
@@ -17,6 +18,15 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
       setName(savedName);
     }
   }, [savedName, name]);
+
+  // Update defaults when gameConfig loads
+  useEffect(() => {
+    if (gameConfig) {
+      setRounds(gameConfig.defaultRounds || 5);
+      setLetterTime(gameConfig.defaultLetterTime || 5);
+      setWordTime(gameConfig.defaultWordTime || 30);
+    }
+  }, [gameConfig]);
 
   // Fetch how-to-play content
   const fetchHowToPlay = async () => {
@@ -35,7 +45,7 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
     if (!name.trim()) return;
 
     if (mode === 'create') {
-      onCreateGame(name.trim(), rounds, letterTime, wordTime);
+      onCreateGame(name.trim(), rounds, letterTime, wordTime, gameType);
     } else if (mode === 'join') {
       if (!gameCode.trim()) return;
       onJoinGame(name.trim(), gameCode.trim());
@@ -97,6 +107,18 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
 
         {mode === 'create' && (
           <div className="space-y-4 slide-in">
+            <div>
+              <label className="block text-white mb-2 font-medium">Game Type</label>
+              <select
+                value={gameType}
+                onChange={(e) => setGameType(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
+              >
+                <option value="normal" className="bg-gray-800">Normal</option>
+                <option value="battle-royale" className="bg-gray-800">Battle Royale</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-white mb-2 font-medium">Rounds to Win</label>
               <select

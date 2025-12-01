@@ -25,14 +25,37 @@ export default function RoundResult({ result, playerName, gameData, socket, soun
           <Text style={[styles.title, isWinner ? styles.titleWin : styles.titleLose]}>
             {isWinner ? 'You Won!' : 'You Lost'}
           </Text>
-          <Text style={styles.subtitle}>
-            <Text style={styles.winnerName}>{result.winner}</Text> won with the word:
-          </Text>
-          <View style={styles.wordContainer}>
-            <Text style={styles.word}>
-              {result.word || ''}
-            </Text>
-          </View>
+          
+          {gameData.gameType === 'battle-royale' ? (
+            <>
+              <Text style={styles.subtitle}>{result.winningReason}</Text>
+              {result.roundWords && result.roundWords.length > 0 && (
+                <View style={styles.wordsListContainer}>
+                  <Text style={styles.wordsListTitle}>Words submitted this round:</Text>
+                  <View style={styles.wordsList}>
+                    {result.roundWords.map((item, idx) => (
+                      <View key={idx} style={styles.wordItem}>
+                        <Text style={styles.wordPlayer}>{item.player}</Text>
+                        <Text style={styles.wordItemText}>{item.word}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </>
+          ) : (
+            <>
+              <Text style={styles.subtitle}>
+                <Text style={styles.winnerName}>{result.winner}</Text> won the round!
+              </Text>
+              <View style={styles.wordContainer}>
+                <Text style={styles.subtitle}>Winning Word:</Text>
+                <Text style={styles.word}>
+                  {result.word || ''}
+                </Text>
+              </View>
+            </>
+          )}
         </>
       )}
 
@@ -122,5 +145,42 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 30,
     textAlign: 'center',
+  },
+  wordsListContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 15,
+    padding: 15,
+    marginTop: 20,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  wordsListTitle: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  wordsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  wordItem: {
+    backgroundColor: 'rgba(139, 92, 246, 0.8)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+  },
+  wordPlayer: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  wordItemText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#fff',
   },
 });

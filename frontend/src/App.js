@@ -105,10 +105,10 @@ function App() {
     return () => newSocket.close();
   }, [soundManager]);
 
-  const handleCreateGame = (name, rounds, letterTime, wordTime) => {
+  const handleCreateGame = (name, rounds, letterTime, wordTime, gameType) => {
     setPlayerName(name);
     localStorage.setItem('wordClashPlayerName', name);
-    socket.emit('create-game', { playerName: name, roundsToWin: rounds, letterTime, wordTime });
+    socket.emit('create-game', { playerName: name, roundsToWin: rounds, letterTime, wordTime, gameType });
   };
 
   const handleJoinGame = (name, gameId) => {
