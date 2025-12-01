@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Swords, Users } from 'lucide-react';
+import { Swords, Users, HelpCircle, X } from 'lucide-react';
 
 function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
   const [name, setName] = useState(savedName || '');
@@ -8,6 +8,8 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
   const [rounds, setRounds] = useState(gameConfig?.defaultRounds || 5);
   const [letterTime, setLetterTime] = useState(gameConfig?.defaultLetterTime || 5);
   const [wordTime, setWordTime] = useState(gameConfig?.defaultWordTime || 30);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
+  const [howToPlayContent, setHowToPlayContent] = useState('');
 
   // Update name when savedName changes
   useEffect(() => {
@@ -15,6 +17,18 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
       setName(savedName);
     }
   }, [savedName, name]);
+
+  // Fetch how-to-play content
+  const fetchHowToPlay = async () => {
+    try {
+      const response = await fetch(`${process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001'}/public/how-to-play.html`);
+      const html = await response.text();
+      setHowToPlayContent(html);
+      setShowHowToPlay(true);
+    } catch (error) {
+      console.error('Error loading how-to-play:', error);
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -69,6 +83,14 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
             >
               <Swords className="w-5 h-5" />
               Join Game
+            </button>
+            <button
+              type="button"
+              onClick={fetchHowToPlay}
+              className="w-full py-3 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-all flex items-center justify-center gap-2 border border-white/30"
+            >
+              <HelpCircle className="w-5 h-5" />
+              How to Play
             </button>
           </div>
         )}
@@ -164,6 +186,21 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
           </div>
         )}
       </form>
+
+      {/* How to Play Modal */}
+      {showHowToPlay && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4 z-50" onClick={() => setShowHowToPlay(false)}>
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-auto relative" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowHowToPlay(false)}
+              className="sticky top-4 right-4 float-right bg-red-500 hover:bg-red-600 text-white p-2 rounded-full transition-all z-10"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <div dangerouslySetInnerHTML={{ __html: howToPlayContent }} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

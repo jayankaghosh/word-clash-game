@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { WebView } from 'react-native-webview';
+import { SOCKET_URL } from '@env';
 
 export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedName, gameConfig, soundManager }) {
   const [name, setName] = useState(savedName || '');
@@ -9,6 +11,7 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
   const [rounds, setRounds] = useState(gameConfig?.defaultRounds || 5);
   const [letterTime, setLetterTime] = useState(gameConfig?.defaultLetterTime || 5);
   const [wordTime, setWordTime] = useState(gameConfig?.defaultWordTime || 30);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   useEffect(() => {
     if (savedName && !name) {
@@ -81,6 +84,15 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
                   }}
                 >
                   <Text style={styles.buttonText}>⚔️ Join Game</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.howToPlayButton]}
+                  onPress={() => {
+                    soundManager?.play('click');
+                    setShowHowToPlay(true);
+                  }}
+                >
+                  <Text style={styles.buttonText}>❓ How to Play</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -213,6 +225,30 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* How to Play Modal */}
+      <Modal
+        visible={showHowToPlay}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => setShowHowToPlay(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>How to Play</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setShowHowToPlay(false)}
+            >
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <WebView
+            source={{ uri: `${SOCKET_URL}/public/how-to-play.html` }}
+            style={styles.webview}
+          />
+        </View>
+      </Modal>
     </LinearGradient>
   );
 }
@@ -299,6 +335,11 @@ const styles = StyleSheet.create({
   joinButton: {
     backgroundColor: '#3b82f6',
   },
+  howToPlayButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
   backButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     flex: 1,
@@ -373,5 +414,40 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     gap: 10,
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 50,
+    backgroundColor: '#7c3aed',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ef4444',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 24,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  webview: {
+    flex: 1,
   },
 });

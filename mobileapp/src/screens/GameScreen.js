@@ -29,8 +29,13 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
 
     socket.on('letters-revealed', ({ startLetter, endLetter }) => {
       setLetters({ start: startLetter, end: endLetter });
-      setPhase('word-input');
+      setPhase('letters-revealed');
       soundManager.play('reveal');
+      
+      // Add 2-second delay before showing word input
+      setTimeout(() => {
+        setPhase('word-input');
+      }, 1500);
     });
 
     socket.on('round-ended', ({ winner, word, scores: newScores }) => {
@@ -141,6 +146,22 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
             />
           )}
 
+          {phase === 'letters-revealed' && (
+            <View style={styles.revealContainer}>
+              <Text style={styles.revealTitle}>The Letters Are...</Text>
+              <View style={styles.lettersRow}>
+                <View style={[styles.letterCard, styles.startLetterCard]}>
+                  <Text style={styles.letterLabel}>Start</Text>
+                  <Text style={styles.letterText}>{letters.start}</Text>
+                </View>
+                <View style={[styles.letterCard, styles.endLetterCard]}>
+                  <Text style={styles.letterLabel}>End</Text>
+                  <Text style={styles.letterText}>{letters.end}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
           {phase === 'word-input' && (
             <WordInput 
               startLetter={letters.start}
@@ -237,5 +258,48 @@ const styles = StyleSheet.create({
   waitingText: {
     fontSize: 16,
     color: '#93c5fd',
+  },
+  revealContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 30,
+    padding: 40,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  revealTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 30,
+  },
+  lettersRow: {
+    flexDirection: 'row',
+    gap: 20,
+  },
+  letterCard: {
+    borderRadius: 20,
+    padding: 25,
+    alignItems: 'center',
+    minWidth: 120,
+    borderWidth: 2,
+  },
+  startLetterCard: {
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    borderColor: 'rgba(34, 197, 94, 0.5)',
+  },
+  endLetterCard: {
+    backgroundColor: 'rgba(59, 130, 246, 0.3)',
+    borderColor: 'rgba(59, 130, 246, 0.5)',
+  },
+  letterLabel: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginBottom: 10,
+  },
+  letterText: {
+    fontSize: 56,
+    fontWeight: 'bold',
+    color: '#fff',
   },
 });
