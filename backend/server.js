@@ -42,6 +42,9 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Serve sound files
+app.use('/assets/sounds', express.static(path.join(__dirname, 'assets/sounds')));
+
 // Game configuration from environment
 const gameConfig = {
   letterTimeOptions: (process.env.LETTER_TIME_OPTIONS || '3,5,7,10,15').split(',').map(Number),

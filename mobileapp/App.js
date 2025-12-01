@@ -7,6 +7,7 @@ import WelcomeScreen from './src/screens/WelcomeScreen';
 import LobbyScreen from './src/screens/LobbyScreen';
 import GameScreen from './src/screens/GameScreen';
 import SoundManager from './src/utils/SoundManager';
+import MuteButton from './src/components/MuteButton';
 
 export default function App() {
   const [socket, setSocket] = useState(null);
@@ -39,6 +40,15 @@ export default function App() {
     });
     
     setSocket(newSocket);
+
+    // Start background music
+    soundManager.startBackgroundMusic();
+
+    // Fetch game configuration
+    fetch(`${SOCKET_URL}/api/config`)
+      .then(res => res.json())
+      .then(config => setGameConfig(config))
+      .catch(err => console.log('Error fetching config:', err));
 
     newSocket.on('connect', () => {
       console.log('Connected to server');
@@ -143,6 +153,7 @@ export default function App() {
   return (
     <>
       <StatusBar style="light" />
+      <MuteButton soundManager={soundManager} />
       
       {screen === 'welcome' && (
         <WelcomeScreen 
@@ -151,6 +162,7 @@ export default function App() {
           error={error}
           savedName={savedName}
           gameConfig={gameConfig}
+          soundManager={soundManager}
         />
       )}
 

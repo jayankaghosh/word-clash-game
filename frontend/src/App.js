@@ -32,6 +32,19 @@ function App() {
     const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
 
+    // Start background music on first user interaction
+    const startMusic = () => {
+      soundManager.startBackgroundMusic();
+      document.removeEventListener('click', startMusic);
+    };
+    document.addEventListener('click', startMusic);
+
+    // Fetch game configuration
+    fetch(`${SOCKET_URL}/api/config`)
+      .then(res => res.json())
+      .then(config => setGameConfig(config))
+      .catch(err => console.log('Error fetching config:', err));
+
     newSocket.on('connect', () => {
       console.log('Connected to server');
     });

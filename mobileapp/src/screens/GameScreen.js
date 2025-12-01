@@ -24,13 +24,13 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
       setRole(playerRole);
       setPhase('letter-input');
       setRoundResult(null);
-      soundManager.play('click');
+      soundManager.play('roundStart');
     });
 
     socket.on('letters-revealed', ({ startLetter, endLetter }) => {
       setLetters({ start: startLetter, end: endLetter });
       setPhase('word-input');
-      soundManager.play('submit');
+      soundManager.play('reveal');
     });
 
     socket.on('round-ended', ({ winner, word, scores: newScores }) => {
@@ -51,10 +51,10 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
       setPhase('game-over');
       
       if (winner === playerName) {
-        soundManager.play('win');
+        soundManager.play('gameWin');
         setShowConfetti(true);
       } else {
-        soundManager.play('lose');
+        soundManager.play('gameLose');
       }
     });
 

@@ -13,7 +13,7 @@ export default function LobbyScreen({ gameData, playerName, onStartGame, socket,
 
     socket.on('game-started', () => {
       onGameStart();
-      soundManager.play('success');
+      soundManager.play('start');
     });
 
     return () => {

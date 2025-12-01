@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedName, gameConfig }) {
+export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedName, gameConfig, soundManager }) {
   const [name, setName] = useState(savedName || '');
   const [mode, setMode] = useState('');
   const [gameCode, setGameCode] = useState('');
@@ -20,9 +20,11 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
     if (!name.trim()) return;
 
     if (mode === 'create') {
+      soundManager?.play('success');
       onCreateGame(name.trim(), rounds, letterTime, wordTime);
     } else if (mode === 'join') {
       if (!gameCode.trim()) return;
+      soundManager?.play('success');
       onJoinGame(name.trim(), gameCode.trim());
     }
   };
@@ -64,13 +66,19 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
                   style={[styles.button, styles.createButton]}
-                  onPress={() => setMode('create')}
+                  onPress={() => {
+                    soundManager?.play('click');
+                    setMode('create');
+                  }}
                 >
                   <Text style={styles.buttonText}>🎮 Create New Game</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.button, styles.joinButton]}
-                  onPress={() => setMode('join')}
+                  onPress={() => {
+                    soundManager?.play('click');
+                    setMode('join');
+                  }}
                 >
                   <Text style={styles.buttonText}>⚔️ Join Game</Text>
                 </TouchableOpacity>
@@ -88,7 +96,10 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
                         styles.roundButton,
                         rounds === num && styles.roundButtonActive
                       ]}
-                      onPress={() => setRounds(num)}
+                      onPress={() => {
+                        soundManager?.play('click');
+                        setRounds(num);
+                      }}
                     >
                       <Text style={[
                         styles.roundButtonText,
@@ -109,7 +120,10 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
                         styles.timeButton,
                         letterTime === num && styles.timeButtonActive
                       ]}
-                      onPress={() => setLetterTime(num)}
+                      onPress={() => {
+                        soundManager?.play('click');
+                        setLetterTime(num);
+                      }}
                     >
                       <Text style={[
                         styles.timeButtonText,
@@ -130,7 +144,10 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
                         styles.timeButton,
                         wordTime === num && styles.timeButtonActive
                       ]}
-                      onPress={() => setWordTime(num)}
+                      onPress={() => {
+                        soundManager?.play('click');
+                        setWordTime(num);
+                      }}
                     >
                       <Text style={[
                         styles.timeButtonText,
@@ -145,7 +162,10 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
                 <View style={styles.actionButtons}>
                   <TouchableOpacity
                     style={[styles.button, styles.backButton]}
-                    onPress={() => setMode('')}
+                    onPress={() => {
+                      soundManager?.play('click');
+                      setMode('');
+                    }}
                   >
                     <Text style={styles.buttonText}>Back</Text>
                   </TouchableOpacity>
@@ -174,7 +194,10 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
                 <View style={styles.actionButtons}>
                   <TouchableOpacity
                     style={[styles.button, styles.backButton]}
-                    onPress={() => setMode('')}
+                    onPress={() => {
+                      soundManager?.play('click');
+                      setMode('');
+                    }}
                   >
                     <Text style={styles.buttonText}>Back</Text>
                   </TouchableOpacity>
