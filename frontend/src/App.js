@@ -66,6 +66,7 @@ function App() {
     });
 
     newSocket.on('player-joined', ({ game }) => {
+      console.log('Player joined event received:', game);
       setGameData(game);
       setScreen('lobby');
       soundManager.play('join');
@@ -111,9 +112,24 @@ function App() {
   };
 
   const handleJoinGame = (name, gameId) => {
+    console.log('Attempting to join game:', gameId.toUpperCase());
     setPlayerName(name);
     localStorage.setItem('wordClashPlayerName', name);
     socket.emit('join-game', { playerName: name, gameId: gameId.toUpperCase() });
+    
+    // Set a timeout to show error if no response after 5 seconds
+    const timeoutId = setTimeout(() => {
+      if (screen === 'welcome') {
+        console.error('Join game timeout - no response from server');
+        setError('Failed to join game. Please try again.');
+        setTimeout(() => setError(''), 3000);
+      }
+    }, 5000);
+    
+    // Store timeout ID to clear it if join succeeds
+    socket.once('player-joined', () => {
+      clearTimeout(timeoutId);
+    });
   };
 
   const handleStartGame = () => {

@@ -176,7 +176,12 @@ io.on('connection', (socket) => {
     playerSockets.set(socket.id, gameId);
     socket.join(gameId);
 
-    io.to(gameId).emit('player-joined', { game });
+    // Emit to the joining player first (guaranteed delivery)
+    socket.emit('player-joined', { game });
+    
+    // Then broadcast to others in the room
+    socket.to(gameId).emit('player-joined', { game });
+    
     console.log(`${playerName} joined game ${gameId}`);
   });
 
