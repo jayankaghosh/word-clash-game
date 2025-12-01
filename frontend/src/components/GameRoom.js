@@ -46,6 +46,18 @@ function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
     socket.on('no-valid-words', ({ startLetter, endLetter }) => {
       setNotification(`No valid words for ${startLetter}-${endLetter}. Restarting round...`);
       soundManager.play('error');
+      // Reset to waiting state
+      setPhase('waiting');
+      setLetters({ start: null, end: null });
+      setTimeout(() => setNotification(''), 2000);
+    });
+
+    socket.on('combination-used', ({ startLetter, endLetter }) => {
+      setNotification(`${startLetter}-${endLetter} already used! Choosing new letters...`);
+      soundManager.play('error');
+      // Reset to waiting state
+      setPhase('waiting');
+      setLetters({ start: null, end: null });
       setTimeout(() => setNotification(''), 2000);
     });
 
@@ -122,12 +134,15 @@ function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
       socket.off('round-started');
       socket.off('letters-revealed');
       socket.off('no-valid-words');
+      socket.off('combination-used');
       socket.off('invalid-word');
       socket.off('game-exited');
       socket.off('round-ended');
       socket.off('game-ended');
+      socket.off('turn-update');
+      socket.off('word-accepted');
     };
-  }, [socket, playerName, soundManager, onGameEnd]);
+  }, [socket, soundManager, playerName, onGameEnd, gameData]);
 
   const handleExitGame = () => {
     if (window.confirm('Are you sure you want to exit? This will end the game for all players.')) {

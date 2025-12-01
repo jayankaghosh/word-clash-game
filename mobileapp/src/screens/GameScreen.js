@@ -58,9 +58,20 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
       setTimerKey(prev => prev + 1);
     });
 
+    socket.on('no-valid-words', ({ startLetter, endLetter }) => {
+      Alert.alert('No Valid Words', `No valid words for ${startLetter}-${endLetter}. Restarting round...`);
+      soundManager.play('error');
+      // Reset to waiting state
+      setPhase('waiting');
+      setLetters({ start: null, end: null });
+    });
+
     socket.on('combination-used', ({ startLetter, endLetter }) => {
       Alert.alert('Combination Used', `${startLetter}-${endLetter} already used! Choosing new letters...`);
       soundManager.play('error');
+      // Reset to waiting state
+      setPhase('waiting');
+      setLetters({ start: null, end: null });
     });
 
     socket.on('round-ended', ({ winner, word, scores: newScores, roundWords, winningReason }) => {
@@ -98,14 +109,15 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
     return () => {
       socket.off('round-started');
       socket.off('letters-revealed');
+      socket.off('no-valid-words');
+      socket.off('combination-used');
       socket.off('turn-update');
       socket.off('word-accepted');
-      socket.off('combination-used');
       socket.off('round-ended');
       socket.off('game-ended');
       socket.off('game-exited');
     };
-  }, [socket, playerName, soundManager, onGameEnd]);
+  }, [socket, soundManager, playerName, onGameEnd]);
 
   const handleExitGame = () => {
     Alert.alert(
