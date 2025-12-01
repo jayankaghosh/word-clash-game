@@ -4,12 +4,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 
 export default function LobbyScreen({ gameData, playerName, onStartGame, socket, soundManager, onGameStart, onLeaveLobby }) {
+  // Debug: Log when gameData changes
+  useEffect(() => {
+    console.log('LobbyScreen - gameData updated:', gameData);
+    console.log('LobbyScreen - players:', gameData?.players);
+  }, [gameData]);
+
   useEffect(() => {
     if (!socket) return;
-
-    socket.on('player-joined', ({ game }) => {
-      soundManager.play('join');
-    });
 
     socket.on('game-started', () => {
       onGameStart();
@@ -17,7 +19,6 @@ export default function LobbyScreen({ gameData, playerName, onStartGame, socket,
     });
 
     return () => {
-      socket.off('player-joined');
       socket.off('game-started');
     };
   }, [socket, soundManager, onGameStart]);

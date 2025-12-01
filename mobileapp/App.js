@@ -72,8 +72,11 @@ export default function App() {
 
     newSocket.on('player-joined', ({ game }) => {
       console.log('Player joined event received:', game);
-      setGameData(game);
-      setScreen('lobby');
+      console.log('Current players:', game?.players);
+      setGameData(prevData => {
+        console.log('Previous game data:', prevData);
+        return game;
+      });
       soundManager.play('join');
     });
 
@@ -134,6 +137,14 @@ export default function App() {
 
   const handleJoinGame = async (name, gameId) => {
     console.log('Attempting to join game:', gameId.toUpperCase());
+    console.log('Socket connected:', socket?.connected);
+    
+    if (!socket || !socket.connected) {
+      setError('Not connected to server. Please check your network.');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+    
     setPlayerName(name);
     try {
       await AsyncStorage.setItem('wordClashPlayerName', name);
