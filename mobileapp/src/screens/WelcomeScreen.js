@@ -414,6 +414,7 @@ const styles = StyleSheet.create({
   actionButtons: {
     flexDirection: 'row',
     gap: 10,
+    marginTop: 20,
   },
   modalContainer: {
     flex: 1,
