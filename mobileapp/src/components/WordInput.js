@@ -59,6 +59,14 @@ export default function WordInput({ startLetter, endLetter, socket, soundManager
     soundManager.play('submit');
   };
 
+  const handleSkip = () => {
+    if (!submitted) {
+      socket.emit('skip-round');
+      setSubmitted(true);
+      soundManager.play('click');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Find a Word!</Text>
@@ -96,6 +104,14 @@ export default function WordInput({ startLetter, endLetter, socket, soundManager
           <Text style={styles.submitButtonText}>➤</Text>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        style={[styles.skipButton, (submitted || disabled) && styles.skipButtonDisabled]}
+        onPress={handleSkip}
+        disabled={submitted || disabled}
+      >
+        <Text style={styles.skipButtonText}>⏭️ Skip</Text>
+      </TouchableOpacity>
 
       {submitted && (
         <View style={styles.submittedContainer}>
@@ -204,10 +220,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   hintText: {
-    color: 'rgba(255, 255, 255, 0.5)',
+    color: 'rgba(255, 255, 255, 0.6)',
     fontSize: 12,
     textAlign: 'center',
     marginTop: 15,
+  },
+  skipButton: {
+    backgroundColor: '#ef4444',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginTop: 12,
+    alignItems: 'center',
+  },
+  skipButtonDisabled: {
+    opacity: 0.5,
+  },
+  skipButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   errorContainer: {
     marginTop: 15,

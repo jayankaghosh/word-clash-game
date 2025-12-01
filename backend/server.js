@@ -231,9 +231,10 @@ io.on('connection', (socket) => {
     io.to(game.players[roles[1]].socketId).emit('round-started', { role: 'end' });
 
     // Auto-advance after letterTime seconds - store timeout
+    // Add 500ms buffer to account for network latency and ensure client timer reaches 0
     game.currentRound.letterTimeout = setTimeout(() => {
       if (game.currentRound && game.currentRound.phase === 'letter-input') {
-        // Assign random letters if not submitted
+        // Auto-select random letter if no letter chosen
         if (!game.currentRound.startLetter) {
           game.currentRound.startLetter = getRandomLetter();
         }
@@ -242,7 +243,7 @@ io.on('connection', (socket) => {
         }
         revealLetters(gameId);
       }
-    }, game.letterTime * 1000);
+    }, (game.letterTime * 1000) + 500);
   }
 
   socket.on('submit-letter', ({ letter }) => {
@@ -316,12 +317,71 @@ io.on('connection', (socket) => {
     }
 
     // Auto-advance after wordTime seconds - store timeout
+    // Add 2000ms for letter reveal delay (frontend) + 500ms buffer for network latency
+    // Mobile uses 1500ms but this covers both
     game.currentRound.wordTimeout = setTimeout(() => {
       if (game.currentRound && game.currentRound.phase === 'word-input') {
+        // Battle Royale: Award point to opponent if current player times out
+        if (game.gameType === 'battle-royale') {
+          const timedOutPlayer = game.players.find(p => p.id === game.currentTurn);
+          const winningPlayer = game.players.find(p => p.id !== game.currentTurn);
+          
+          game.currentRound.winner = winningPlayer.id;
+          game.currentRound.loser = game.currentTurn;
+          game.currentRound.winningReason = `${timedOutPlayer?.name} ran out of time`;
+          
+          if (winningPlayer) winningPlayer.score++;
+        }
+        
         endRound(gameId);
       }
-    }, game.wordTime * 1000);
+    }, (game.wordTime * 1000) + 2500);
   }
+
+  socket.on('skip-round', () => {
+    const gameId = playerSockets.get(socket.id);
+    const game = games.get(gameId);
+
+    if (!game || !game.currentRound || game.currentRound.phase !== 'word-input') return;
+
+    if (game.gameType === 'battle-royale') {
+      // Battle Royale: If current player skips, opponent wins
+      if (socket.id !== game.currentTurn) {
+        socket.emit('error', { message: 'Not your turn!' });
+        return;
+      }
+
+      const skippingPlayer = game.players.find(p => p.id === socket.id);
+      const winningPlayer = game.players.find(p => p.id !== socket.id);
+      
+      game.currentRound.winner = winningPlayer.id;
+      game.currentRound.loser = socket.id;
+      game.currentRound.winningReason = `${skippingPlayer?.name} skipped their turn`;
+      
+      if (winningPlayer) winningPlayer.score++;
+      
+      endRound(gameId);
+    } else {
+      // Normal Mode: Track who skipped
+      if (!game.currentRound.skips) {
+        game.currentRound.skips = [];
+      }
+      
+      // Prevent double skip from same player
+      if (game.currentRound.skips.includes(socket.id)) {
+        return;
+      }
+      
+      game.currentRound.skips.push(socket.id);
+      
+      // If both players skipped, it's a draw
+      if (game.currentRound.skips.length === 2) {
+        game.currentRound.winner = null;
+        game.currentRound.winningReason = 'Both players skipped';
+        endRound(gameId);
+      }
+    }
+  });
 
   socket.on('submit-word', ({ word }) => {
     const gameId = playerSockets.get(socket.id);
@@ -398,6 +458,7 @@ io.on('connection', (socket) => {
       });
 
       // Start timer for next player
+      // Add 500ms buffer to account for network latency (no letter reveal delay for turn changes)
       game.currentRound.wordTimeout = setTimeout(() => {
         if (game.currentRound && game.currentRound.phase === 'word-input') {
           // Current player ran out of time - other player wins
@@ -412,7 +473,7 @@ io.on('connection', (socket) => {
           
           endRound(gameId);
         }
-      }, game.wordTime * 1000);
+      }, (game.wordTime * 1000) + 500);
     }
   });
 

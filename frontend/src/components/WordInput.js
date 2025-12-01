@@ -59,6 +59,14 @@ function WordInput({ startLetter, endLetter, socket, soundManager, wordTime, dis
     }
   };
 
+  const handleSkip = () => {
+    if (!submitted) {
+      socket.emit('skip-round');
+      setSubmitted(true);
+      soundManager.play('click');
+    }
+  };
+
   return (
     <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-12 border border-white/20">
       <div className="text-center mb-8">
@@ -91,22 +99,24 @@ function WordInput({ startLetter, endLetter, socket, soundManager, wordTime, dis
           maxLength={15}
           autoComplete="off"
         />
-        <button
-          type="submit"
-          disabled={!word.trim() || submitted || disabled}
-          className="w-full py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold text-lg rounded-xl hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 disabled:hover:scale-100 flex items-center justify-center gap-2 shadow-lg"
-        >
-          <Send className="w-5 h-5" />
-          {disabled ? 'Wait for your turn' : (submitted ? 'Submitted!' : 'Submit Word')}
-        </button>
-
-        {submitted && (
-          <div className="mt-4 text-center">
-            <div className="inline-block bg-green-500/30 text-green-300 px-4 py-2 rounded-lg">
-              ✓ Word submitted! Waiting for validation...
-            </div>
-          </div>
-        )}
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={!word.trim() || submitted || disabled}
+            className="flex-1 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold text-lg rounded-xl hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 disabled:hover:scale-100 flex items-center justify-center gap-2 shadow-lg"
+          >
+            <Send className="w-5 h-5" />
+            {submitted ? 'Submitted!' : 'Submit Word'}
+          </button>
+          <button
+            type="button"
+            onClick={handleSkip}
+            disabled={submitted || disabled}
+            className="px-6 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white font-bold text-lg rounded-xl hover:from-red-600 hover:to-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105 disabled:hover:scale-100 shadow-lg"
+          >
+            Skip
+          </button>
+        </div>
 
         <p className="text-white/50 text-sm mt-4 text-center">
           {disabled ? 'Waiting for your turn...' : 'First valid word wins the round!'}
