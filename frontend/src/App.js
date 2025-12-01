@@ -68,6 +68,26 @@ function App() {
       }, 3000);
     });
 
+    newSocket.on('player-left-lobby', ({ message }) => {
+      setError(message);
+      soundManager.play('error');
+      setTimeout(() => {
+        setError('');
+        setScreen('welcome');
+        setGameData(null);
+      }, 3000);
+    });
+
+    newSocket.on('game-exited', ({ message }) => {
+      setError(message);
+      soundManager.play('error');
+      setTimeout(() => {
+        setError('');
+        setScreen('welcome');
+        setGameData(null);
+      }, 3000);
+    });
+
     return () => newSocket.close();
   }, [soundManager]);
 
@@ -85,6 +105,11 @@ function App() {
 
   const handleStartGame = () => {
     socket.emit('start-game');
+  };
+
+  const handleLeaveLobby = () => {
+    setScreen('welcome');
+    setGameData(null);
   };
 
   return (
@@ -114,6 +139,7 @@ function App() {
           socket={socket}
           soundManager={soundManager}
           onGameStart={() => setScreen('game')}
+          onLeaveLobby={handleLeaveLobby}
         />
       )}
 

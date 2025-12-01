@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
-import { Copy, Users, Trophy } from 'lucide-react';
+import { Copy, Users, Trophy, ArrowLeft } from 'lucide-react';
 import copy from 'copy-to-clipboard';
 
-function Lobby({ gameData, playerName, onStartGame, socket, soundManager, onGameStart }) {
+function Lobby({ gameData, playerName, onStartGame, socket, soundManager, onGameStart, onLeaveLobby }) {
   const isCreator = gameData && socket && gameData.creator === socket.id;
   const canStart = gameData && gameData.players.length === 2;
 
@@ -24,10 +24,25 @@ function Lobby({ gameData, playerName, onStartGame, socket, soundManager, onGame
     soundManager.play('click');
   };
 
+  const handleLeaveLobby = () => {
+    if (window.confirm('Are you sure you want to leave the lobby?')) {
+      socket.emit('leave-lobby');
+      soundManager.play('error');
+      onLeaveLobby();
+    }
+  };
+
   if (!gameData) return null;
 
   return (
-    <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-12 max-w-md w-full border border-white/20">
+    <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-12 max-w-md w-full border border-white/20">
+      <button
+        onClick={handleLeaveLobby}
+        className="absolute top-4 left-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full border border-white/30 transition-all"
+        title="Leave Lobby"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </button>
       <div className="text-center mb-8">
         <Users className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
         <h2 className="text-3xl font-bold text-white mb-2">Game Lobby</h2>

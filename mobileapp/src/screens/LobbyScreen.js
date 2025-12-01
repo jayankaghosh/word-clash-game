@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Share } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Share, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Clipboard from 'expo-clipboard';
 
-export default function LobbyScreen({ gameData, playerName, onStartGame, socket, soundManager, onGameStart }) {
+export default function LobbyScreen({ gameData, playerName, onStartGame, socket, soundManager, onGameStart, onLeaveLobby }) {
   useEffect(() => {
     if (!socket) return;
 
@@ -41,11 +41,41 @@ export default function LobbyScreen({ gameData, playerName, onStartGame, socket,
   const isCreator = socket?.id === gameData.creator;
   const canStart = gameData.players.length === 2 && isCreator;
 
+  const handleLeaveLobby = () => {
+    Alert.alert(
+      'Leave Lobby',
+      'Are you sure you want to leave the lobby?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => soundManager.play('click')
+        },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: () => {
+            socket.emit('leave-lobby');
+            soundManager.play('error');
+            onLeaveLobby();
+          }
+        }
+      ]
+    );
+  };
+
   return (
     <LinearGradient
       colors={['#4c1d95', '#1e3a8a', '#312e81']}
       style={styles.container}
     >
+      <TouchableOpacity 
+        style={styles.backButton}
+        onPress={handleLeaveLobby}
+      >
+        <Text style={styles.backButtonText}>←</Text>
+      </TouchableOpacity>
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.icon}>👥</Text>
@@ -122,10 +152,30 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  backButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  backButtonText: {
+    fontSize: 24,
+    color: '#fff',
+    fontWeight: 'bold',
+  },
   scrollContent: {
     flexGrow: 1,
     padding: 20,
     paddingTop: 60,
+    paddingBottom: 100,
   },
   header: {
     alignItems: 'center',
@@ -236,6 +286,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 20,
+    marginBottom: 20,
   },
   startButtonText: {
     color: '#fff',
@@ -247,6 +298,7 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     marginTop: 20,
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },

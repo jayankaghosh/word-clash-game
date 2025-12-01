@@ -4,7 +4,21 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
-const words = require('an-array-of-english-words');
+const fs = require('fs');
+const path = require('path');
+
+// Load word-list (Oxford English Dictionary)
+let words = [];
+try {
+  const wordList = require('word-list');
+  const wordListPath = wordList.default || wordList;
+  const wordListFile = fs.readFileSync(wordListPath, 'utf-8');
+  words = wordListFile.split('\n').filter(w => w.trim().length >= 3 && w.trim().length <= 15).map(w => w.trim());
+  console.log('Loaded Oxford English Dictionary from word-list package');
+} catch (error) {
+  console.error('Error loading word-list, falling back to an-array-of-english-words:', error.message);
+  words = require('an-array-of-english-words').filter(w => w.length >= 3 && w.length <= 15);
+}
 
 const app = express();
 const server = http.createServer(app);
@@ -49,8 +63,8 @@ const wordsByFirstLast = {};
 
 // Index words by first and last letter for quick lookup
 words.forEach(word => {
-  const w = word.toLowerCase();
-  if (w.length < 2) return;
+  const w = word.toLowerCase().trim();
+  if (w.length < 3) return; // Minimum 3 letters
   
   const key = `${w[0]}-${w[w.length - 1]}`;
   if (!wordsByFirstLast[key]) {
@@ -72,9 +86,10 @@ function generateGameCode() {
 
 // Check if word is valid
 function isValidWord(word, startLetter, endLetter, usedWords) {
-  const w = word.toLowerCase();
+  const w = word.toLowerCase().trim();
   
-  if (w.length < 2) return { valid: false, reason: 'Word too short' };
+  if (w.length < 3) return { valid: false, reason: 'Word must be at least 3 letters' };
+  if (w.length > 15) return { valid: false, reason: 'Word too long (max 15 letters)' };
   if (!wordSet.has(w)) return { valid: false, reason: 'Not a valid English word' };
   if (usedWords.has(w)) return { valid: false, reason: 'Word already used' };
   if (w[0] !== startLetter.toLowerCase()) return { valid: false, reason: `Must start with '${startLetter}'` };
@@ -344,6 +359,64 @@ io.on('connection', (socket) => {
     startRound(gameId);
   });
 
+  socket.on('leave-lobby', () => {
+    const gameId = playerSockets.get(socket.id);
+    const game = games.get(gameId);
+    
+    if (!game) return;
+    
+    const player = game.players.find(p => p.id === socket.id);
+    const playerName = player ? player.name : 'A player';
+    
+    // Notify other players in lobby
+    io.to(gameId).emit('player-left-lobby', { 
+      message: `${playerName} has left the lobby.` 
+    });
+    
+    // Disconnect all sockets from the room
+    game.players.forEach(p => {
+      const playerSocket = io.sockets.sockets.get(p.id);
+      if (playerSocket) {
+        playerSocket.leave(gameId);
+      }
+      playerSockets.delete(p.id);
+    });
+    
+    // Clean up the game
+    games.delete(gameId);
+    
+    console.log(`Player ${playerName} left lobby ${gameId}, all sockets disconnected`);
+  });
+
+  socket.on('exit-game', () => {
+    const gameId = playerSockets.get(socket.id);
+    const game = games.get(gameId);
+    
+    if (!game) return;
+    
+    const player = game.players.find(p => p.id === socket.id);
+    const playerName = player ? player.name : 'A player';
+    
+    // Notify all players in the game
+    io.to(gameId).emit('game-exited', { 
+      message: `${playerName} has exited the game.` 
+    });
+    
+    // Disconnect all sockets from the room
+    game.players.forEach(p => {
+      const playerSocket = io.sockets.sockets.get(p.id);
+      if (playerSocket) {
+        playerSocket.leave(gameId);
+      }
+      playerSockets.delete(p.id);
+    });
+    
+    // Clean up the game
+    games.delete(gameId);
+    
+    console.log(`Game ${gameId} ended by ${playerName}, all sockets disconnected`);
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
     
@@ -351,10 +424,23 @@ io.on('connection', (socket) => {
     if (gameId) {
       const game = games.get(gameId);
       if (game) {
+        // Notify other players
         io.to(gameId).emit('player-disconnected', { message: 'Opponent disconnected' });
+        
+        // Disconnect all sockets from the room
+        game.players.forEach(p => {
+          const playerSocket = io.sockets.sockets.get(p.id);
+          if (playerSocket) {
+            playerSocket.leave(gameId);
+          }
+          playerSockets.delete(p.id);
+        });
+        
+        // Clean up the game
         games.delete(gameId);
+      } else {
+        playerSockets.delete(socket.id);
       }
-      playerSockets.delete(socket.id);
     }
   });
 });

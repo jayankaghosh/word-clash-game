@@ -29,7 +29,10 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 15,
-    padding: 20,
+    padding: 15,
+    marginBottom: 10,
+    marginTop: 50,
+    marginHorizontal: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
@@ -37,16 +40,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 15,
-    gap: 8,
+    marginBottom: 10,
   },
   trophy: {
     fontSize: 20,
+    marginRight: 6,
   },
   title: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#fbbf24',
   },
   scoresContainer: {
     flexDirection: 'row',
@@ -56,7 +59,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 12,
-    padding: 15,
+    padding: 12,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
@@ -69,7 +72,7 @@ const styles = StyleSheet.create({
   },
   score: {
     color: '#fbbf24',
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
   },
 });

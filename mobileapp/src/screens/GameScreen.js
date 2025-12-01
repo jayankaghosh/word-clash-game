@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import ScoreBoard from '../components/ScoreBoard';
@@ -33,8 +33,8 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
       soundManager.play('submit');
     });
 
-    socket.on('round-ended', ({ winner, submissions, scores: newScores }) => {
-      setRoundResult({ winner, submissions });
+    socket.on('round-ended', ({ winner, word, scores: newScores }) => {
+      setRoundResult({ winner, word });
       setScores(newScores);
       setPhase('round-end');
       
@@ -58,27 +58,73 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
       }
     });
 
+    socket.on('game-exited', ({ message }) => {
+      soundManager.play('error');
+      onGameEnd();
+    });
+
     return () => {
       socket.off('round-started');
       socket.off('letters-revealed');
       socket.off('round-ended');
       socket.off('game-ended');
+      socket.off('game-exited');
     };
-  }, [socket, playerName, soundManager]);
+  }, [socket, playerName, soundManager, onGameEnd]);
+
+  const handleExitGame = () => {
+    Alert.alert(
+      'Exit Game',
+      'Are you sure you want to exit? This will end the game for all players.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => soundManager.play('click')
+        },
+        {
+          text: 'Exit',
+          style: 'destructive',
+          onPress: () => {
+            socket.emit('exit-game');
+            soundManager.play('error');
+            onGameEnd();
+          }
+        }
+      ]
+    );
+  };
 
   return (
     <LinearGradient
       colors={['#4c1d95', '#1e3a8a', '#312e81']}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.headerRow}>
         <ScoreBoard 
           players={gameData.players}
           roundsToWin={gameData.roundsToWin}
           currentScores={scores}
         />
-
-        <View style={styles.gameContent}>
+        <TouchableOpacity 
+          style={styles.exitButton}
+          onPress={handleExitGame}
+        >
+          <Text style={styles.exitButtonText}>❌</Text>
+        </TouchableOpacity>
+      </View>
+      
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
+      >
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.gameContent}>
           {phase === 'waiting' && (
             <View style={styles.waitingContainer}>
               <Text style={styles.waitingTitle}>Get Ready!</Text>
@@ -122,8 +168,9 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
               onPlayAgain={onGameEnd}
             />
           )}
-        </View>
-      </ScrollView>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
       
       {showConfetti && (
         <ConfettiCannon
@@ -142,13 +189,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerRow: {
+    position: 'relative',
+  },
+  exitButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 40,
+    height: 40,
+    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.5)',
+  },
+  exitButtonText: {
+    fontSize: 20,
+  },
+  keyboardView: {
+    flex: 1,
+  },
   scrollContent: {
     flexGrow: 1,
     padding: 20,
-    paddingTop: 60,
+    paddingBottom: 100,
   },
   gameContent: {
-    marginTop: 20,
+    flex: 1,
+    justifyContent: 'center',
   },
   waitingContainer: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',

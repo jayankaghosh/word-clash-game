@@ -5,6 +5,7 @@ import Timer from './Timer';
 export default function WordInput({ startLetter, endLetter, socket, soundManager, wordTime }) {
   const [word, setWord] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -14,12 +15,22 @@ export default function WordInput({ startLetter, endLetter, socket, soundManager
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('word-validated', ({ isValid, message }) => {
-      soundManager.play(isValid ? 'success' : 'error');
-    });
+    // Listen for invalid word response to allow retry
+    const handleInvalidWord = ({ reason }) => {
+      setSubmitted(false);
+      setWord('');
+      setErrorMessage(reason || 'Invalid word!');
+      soundManager.play('error');
+      
+      // Clear error after 3 seconds
+      setTimeout(() => setErrorMessage(''), 3000);
+      setTimeout(() => inputRef.current?.focus(), 100);
+    };
+
+    socket.on('invalid-word', handleInvalidWord);
 
     return () => {
-      socket.off('word-validated');
+      socket.off('invalid-word', handleInvalidWord);
     };
   }, [socket, soundManager]);
 
@@ -70,9 +81,17 @@ export default function WordInput({ startLetter, endLetter, socket, soundManager
 
       {submitted && (
         <View style={styles.submittedContainer}>
-          <Text style={styles.submittedText}>✓ Word submitted! Waiting for validation...</Text>
+          <Text style={styles.submittedText}>✓ Word submitted!</Text>
         </View>
       )}
+      
+      {errorMessage && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>❌ {errorMessage}</Text>
+        </View>
+      )}
+      
+      <Text style={styles.hintText}>First valid word wins the round!</Text>
     </View>
   );
 }
@@ -81,28 +100,28 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 20,
-    padding: 30,
+    padding: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   lettersRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
-    gap: 15,
+    marginBottom: 15,
+    gap: 12,
   },
   letterCard: {
     backgroundColor: 'rgba(16, 185, 129, 0.3)',
     borderRadius: 12,
-    padding: 15,
+    padding: 12,
     alignItems: 'center',
   },
   letterLabel: {
@@ -112,7 +131,7 @@ const styles = StyleSheet.create({
   },
   letterValue: {
     color: '#fff',
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
   },
   arrow: {
@@ -162,6 +181,26 @@ const styles = StyleSheet.create({
   },
   submittedText: {
     color: '#10b981',
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  hintText: {
+    color: 'rgba(255, 255, 255, 0.5)',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 15,
+  },
+  errorContainer: {
+    marginTop: 15,
+    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.5)',
+  },
+  errorText: {
+    color: '#ef4444',
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '600',

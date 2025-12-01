@@ -76,16 +76,48 @@ export default function App() {
       }, 3000);
     });
 
+    newSocket.on('player-left-lobby', ({ message }) => {
+      setError(message);
+      soundManager.play('error');
+      setTimeout(() => {
+        setError('');
+        setScreen('welcome');
+        setGameData(null);
+      }, 3000);
+    });
+
+    newSocket.on('game-exited', ({ message }) => {
+      setError(message);
+      soundManager.play('error');
+      setTimeout(() => {
+        setError('');
+        setScreen('welcome');
+        setGameData(null);
+      }, 3000);
+    });
+
     return () => newSocket.close();
   }, [soundManager]);
 
   const handleCreateGame = async (name, rounds, letterTime, wordTime) => {
+    console.log('Create game clicked:', { name, rounds, letterTime, wordTime });
+    console.log('Socket connected:', socket?.connected);
+    console.log('Socket URL:', SOCKET_URL);
+    
+    if (!socket || !socket.connected) {
+      setError('Not connected to server. Please check your network.');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+    
     setPlayerName(name);
     try {
       await AsyncStorage.setItem('wordClashPlayerName', name);
     } catch (e) {
       console.log('Error saving name:', e);
     }
+    
+    console.log('Emitting create-game event');
     socket.emit('create-game', { playerName: name, roundsToWin: rounds, letterTime, wordTime });
   };
 
@@ -101,6 +133,11 @@ export default function App() {
 
   const handleStartGame = () => {
     socket.emit('start-game');
+  };
+
+  const handleLeaveLobby = () => {
+    setScreen('welcome');
+    setGameData(null);
   };
 
   return (
@@ -125,6 +162,7 @@ export default function App() {
           socket={socket}
           soundManager={soundManager}
           onGameStart={() => setScreen('game')}
+          onLeaveLobby={handleLeaveLobby}
         />
       )}
 

@@ -30,7 +30,7 @@ export default function RoundResult({ result, playerName, gameData, socket, soun
           </Text>
           <View style={styles.wordContainer}>
             <Text style={styles.word}>
-              {result.submissions.find(s => s.player === result.winner)?.word || ''}
+              {result.word || ''}
             </Text>
           </View>
         </>

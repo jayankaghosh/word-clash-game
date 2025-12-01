@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import LetterInput from './LetterInput';
 import WordInput from './WordInput';
@@ -81,15 +82,30 @@ function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
       }
     });
 
+    socket.on('game-exited', ({ message }) => {
+      soundManager.play('error');
+      alert(message);
+      onGameEnd();
+    });
+
     return () => {
       socket.off('round-started');
       socket.off('letters-revealed');
       socket.off('no-valid-words');
       socket.off('invalid-word');
+      socket.off('game-exited');
       socket.off('round-ended');
       socket.off('game-ended');
     };
-  }, [socket, playerName, soundManager]);
+  }, [socket, playerName, soundManager, onGameEnd]);
+
+  const handleExitGame = () => {
+    if (window.confirm('Are you sure you want to exit? This will end the game for all players.')) {
+      socket.emit('exit-game');
+      soundManager.play('error');
+      onGameEnd();
+    }
+  };
 
   if (!gameData) return null;
 
@@ -101,11 +117,20 @@ function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
         </div>
       )}
 
-      <ScoreBoard 
-        players={gameData.players}
-        roundsToWin={gameData.roundsToWin}
-        currentScores={scores}
-      />
+      <div className="relative">
+        <ScoreBoard 
+          players={gameData.players}
+          roundsToWin={gameData.roundsToWin}
+          currentScores={scores}
+        />
+        <button
+          onClick={handleExitGame}
+          className="absolute top-2 right-2 bg-red-500/30 hover:bg-red-500/50 text-white p-2 rounded-full border border-red-500/50 transition-all"
+          title="Exit Game"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
       <div className="mt-6">
         {phase === 'waiting' && (
