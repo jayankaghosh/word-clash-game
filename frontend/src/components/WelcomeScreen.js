@@ -52,6 +52,13 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
     }
   };
 
+  // Handle input focus to scroll into view on mobile
+  const handleInputFocus = (e) => {
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
+  };
+
   return (
     <div className="bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-12 max-w-md w-full border border-white/20">
       <div className="text-center mb-8">
@@ -69,6 +76,7 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            onFocus={handleInputFocus}
             className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-yellow-400"
             placeholder="Enter your name"
             maxLength={20}
@@ -109,53 +117,90 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
           <div className="space-y-4 slide-in">
             <div>
               <label className="block text-white mb-2 font-medium">Game Type</label>
-              <select
-                value={gameType}
-                onChange={(e) => setGameType(e.target.value)}
-                className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              >
-                <option value="normal" className="bg-gray-800">Normal</option>
-                <option value="battle-royale" className="bg-gray-800">Battle Royale</option>
-              </select>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setGameType('normal')}
+                  className={`py-3 px-4 rounded-lg font-medium transition-all ${
+                    gameType === 'normal'
+                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
+                      : 'bg-white/10 text-white/70 hover:bg-white/20'
+                  }`}
+                >
+                  🎮 Normal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGameType('battle-royale')}
+                  className={`py-3 px-4 rounded-lg font-medium transition-all ${
+                    gameType === 'battle-royale'
+                      ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
+                      : 'bg-white/10 text-white/70 hover:bg-white/20'
+                  }`}
+                >
+                  ⚔️ Battle Royale
+                </button>
+              </div>
             </div>
 
             <div>
               <label className="block text-white mb-2 font-medium">Rounds to Win</label>
-              <select
-                value={rounds}
-                onChange={(e) => setRounds(Number(e.target.value))}
-                className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              >
+              <div className="grid grid-cols-4 gap-2">
                 {(gameConfig?.roundsOptions || [3, 5, 7, 10]).map(num => (
-                  <option key={num} value={num} className="bg-gray-800">Best of {num}</option>
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setRounds(num)}
+                    className={`py-3 rounded-lg font-bold transition-all ${
+                      rounds === num
+                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    }`}
+                  >
+                    {num}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div>
               <label className="block text-white mb-2 font-medium">Letter Time (seconds)</label>
-              <select
-                value={letterTime}
-                onChange={(e) => setLetterTime(Number(e.target.value))}
-                className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              >
+              <div className="grid grid-cols-5 gap-2">
                 {(gameConfig?.letterTimeOptions || [3, 5, 7, 10, 15]).map(num => (
-                  <option key={num} value={num} className="bg-gray-800">{num} seconds</option>
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setLetterTime(num)}
+                    className={`py-3 rounded-lg font-bold transition-all ${
+                      letterTime === num
+                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    }`}
+                  >
+                    {num}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div>
               <label className="block text-white mb-2 font-medium">Word Time (seconds)</label>
-              <select
-                value={wordTime}
-                onChange={(e) => setWordTime(Number(e.target.value))}
-                className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              >
+              <div className="grid grid-cols-4 gap-2">
                 {(gameConfig?.wordTimeOptions || [15, 20, 30, 45, 60, 90, 120]).map(num => (
-                  <option key={num} value={num} className="bg-gray-800">{num} seconds</option>
+                  <button
+                    key={num}
+                    type="button"
+                    onClick={() => setWordTime(num)}
+                    className={`py-2 px-1 rounded-lg font-bold text-sm transition-all ${
+                      wordTime === num
+                        ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-lg'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
+                    }`}
+                  >
+                    {num}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
 
             <div className="flex gap-2">
@@ -184,6 +229,7 @@ function WelcomeScreen({ onCreateGame, onJoinGame, savedName, gameConfig }) {
                 type="text"
                 value={gameCode}
                 onChange={(e) => setGameCode(e.target.value.toUpperCase())}
+                onFocus={handleInputFocus}
                 className="w-full px-4 py-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-yellow-400 uppercase text-center text-2xl tracking-widest font-bold"
                 placeholder="XXXXXX"
                 maxLength={6}

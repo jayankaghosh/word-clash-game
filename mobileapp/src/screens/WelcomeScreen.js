@@ -30,13 +30,22 @@ export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedNa
   }, [gameConfig]);
 
   const handleSubmit = () => {
-    if (!name.trim()) return;
+    console.log('handleSubmit called', { name, mode, gameCode });
+    
+    if (!name.trim()) {
+      console.log('Name is empty, returning');
+      return;
+    }
 
     if (mode === 'create') {
       soundManager?.play('success');
       onCreateGame(name.trim(), rounds, letterTime, wordTime, gameType);
     } else if (mode === 'join') {
-      if (!gameCode.trim()) return;
+      if (!gameCode.trim()) {
+        console.log('Game code is empty, returning');
+        return;
+      }
+      console.log('Calling onJoinGame');
       soundManager?.play('success');
       onJoinGame(name.trim(), gameCode.trim());
     }

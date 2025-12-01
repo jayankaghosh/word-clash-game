@@ -52,19 +52,24 @@ function WordInput({ startLetter, endLetter, socket, soundManager, wordTime, dis
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (word.trim() && !submitted) {
-      socket.emit('submit-word', { word: word.trim() });
-      setSubmitted(true);
-      soundManager.play('submit');
-    }
+    if (!word.trim() || submitted || disabled) return;
+    
+    setSubmitted(true);
+    socket.emit('submit-word', { word: word.trim() });
+    soundManager.play('submit');
   };
 
   const handleSkip = () => {
-    if (!submitted) {
-      socket.emit('skip-round');
-      setSubmitted(true);
-      soundManager.play('click');
-    }
+    if (submitted || disabled) return;
+    setSubmitted(true);
+    socket.emit('skip-round');
+    soundManager.play('click');
+  };
+
+  const handleInputFocus = (e) => {
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
   };
 
   return (
@@ -93,6 +98,7 @@ function WordInput({ startLetter, endLetter, socket, soundManager, wordTime, dis
           type="text"
           value={word}
           onChange={(e) => setWord(e.target.value.toUpperCase())}
+          onFocus={handleInputFocus}
           className="w-full px-6 py-4 rounded-xl bg-white/20 border-2 border-white/30 text-white text-center text-2xl font-bold placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
           placeholder={disabled ? "Not your turn..." : "Type your word..."}
           disabled={submitted || disabled}

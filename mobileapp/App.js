@@ -73,10 +73,10 @@ export default function App() {
     newSocket.on('player-joined', ({ game }) => {
       console.log('Player joined event received:', game);
       console.log('Current players:', game?.players);
-      setGameData(prevData => {
-        console.log('Previous game data:', prevData);
-        return game;
-      });
+      setGameData(game);
+      // Always navigate to lobby when player-joined is received
+      // This handles both: the joining player and the waiting player
+      setScreen('lobby');
       soundManager.play('join');
     });
 
@@ -136,15 +136,20 @@ export default function App() {
   };
 
   const handleJoinGame = async (name, gameId) => {
+    console.log('handleJoinGame called in App.js');
     console.log('Attempting to join game:', gameId.toUpperCase());
+    console.log('Socket exists:', !!socket);
     console.log('Socket connected:', socket?.connected);
+    console.log('SOCKET_URL:', SOCKET_URL);
     
     if (!socket || !socket.connected) {
+      console.error('Socket not connected!');
       setError('Not connected to server. Please check your network.');
       setTimeout(() => setError(''), 3000);
       return;
     }
     
+    console.log('Setting player name and emitting join-game');
     setPlayerName(name);
     try {
       await AsyncStorage.setItem('wordClashPlayerName', name);
@@ -152,6 +157,7 @@ export default function App() {
       console.log('Error saving name:', e);
     }
     socket.emit('join-game', { playerName: name, gameId: gameId.toUpperCase() });
+    console.log('join-game event emitted');
     
     // Set a timeout to show error if no response after 5 seconds
     const timeoutId = setTimeout(() => {
