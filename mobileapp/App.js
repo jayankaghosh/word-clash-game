@@ -110,8 +110,8 @@ export default function App() {
     return () => newSocket.close();
   }, [soundManager]);
 
-  const handleCreateGame = async (name, rounds, letterTime, wordTime) => {
-    console.log('Create game clicked:', { name, rounds, letterTime, wordTime });
+  const handleCreateGame = async (name, rounds, letterTime, wordTime, gameType) => {
+    console.log('Create game clicked:', { name, rounds, letterTime, wordTime, gameType });
     console.log('Socket connected:', socket?.connected);
     console.log('Socket URL:', SOCKET_URL);
     
