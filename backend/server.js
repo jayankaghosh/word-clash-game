@@ -1,11 +1,17 @@
 require('dotenv').config();
-
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
+const mongoose = require('mongoose');
+
+// MongoDB Models
+const Player = require('./models/Player');
+const Game = require('./models/Game');
+const Round = require('./models/Round');
+const GameResult = require('./models/GameResult');
 
 // Load word-list (Oxford English Dictionary)
 let words = [];
@@ -22,6 +28,12 @@ try {
 
 const app = express();
 const server = http.createServer(app);
+
+// MongoDB Connection
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/wordclash';
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('✅ Connected to MongoDB'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // Get allowed origins from env or use default
 const allowedOriginsEnv = process.env.ALLOWED_ORIGINS || '*';
@@ -152,6 +164,14 @@ io.on('connection', (socket) => {
     playerSockets.set(socket.id, gameId);
     socket.join(gameId);
 
+    // Log player (creator) to MongoDB
+    const playerLog = new Player({
+      name: playerName,
+      socketId: socket.id,
+      ipAddress: socket.handshake.address
+    });
+    playerLog.save().catch(err => console.error('Error logging player:', err));
+
     socket.emit('game-created', { gameId, game });
     console.log(`Game ${gameId} created by ${playerName}`);
   });
@@ -184,6 +204,14 @@ io.on('connection', (socket) => {
     playerSockets.set(socket.id, gameId);
     socket.join(gameId);
 
+    // Log player join to MongoDB
+    const playerLog = new Player({
+      name: playerName,
+      socketId: socket.id,
+      ipAddress: socket.handshake.address
+    });
+    playerLog.save().catch(err => console.error('Error logging player:', err));
+
     // Emit to the joining player first (guaranteed delivery)
     socket.emit('player-joined', { game });
     
@@ -203,6 +231,19 @@ io.on('connection', (socket) => {
     }
 
     game.status = 'playing';
+    game.startTime = Date.now(); // Track game start time
+    
+    // Log game start to MongoDB
+    const gameLog = new Game({
+      gameId: gameId,
+      gameType: game.gameType,
+      players: game.players.map(p => ({ name: p.name, socketId: p.socketId })),
+      roundsToWin: game.roundsToWin,
+      letterTime: game.letterTime,
+      wordTime: game.wordTime
+    });
+    gameLog.save().catch(err => console.error('Error logging game start:', err));
+    
     io.to(gameId).emit('game-started', { game });
     
     // Start first round after a short delay
@@ -212,6 +253,12 @@ io.on('connection', (socket) => {
   function startRound(gameId) {
     const game = games.get(gameId);
     if (!game || game.status !== 'playing') return;
+
+    // Initialize round counter if not exists
+    if (!game.currentRoundNumber) {
+      game.currentRoundNumber = 0;
+    }
+    game.currentRoundNumber++;
 
     // Randomly assign roles
     const roles = Math.random() > 0.5 ? [0, 1] : [1, 0];
@@ -223,7 +270,9 @@ io.on('connection', (socket) => {
       endLetter: null,
       submissions: [],
       phase: 'letter-input',
-      hasEnded: false
+      hasEnded: false,
+      roundNumber: game.currentRoundNumber,
+      startTime: Date.now()
     };
 
     // Notify players of their roles
@@ -554,8 +603,32 @@ io.on('connection', (socket) => {
 
     // Set phase to ended
     game.currentRound.phase = 'ended';
+    round.endTime = Date.now();
 
     const winner = game.players.find(p => p.id === round.winner);
+    
+    // Log round to MongoDB
+    const roundLog = new Round({
+      gameId: gameId,
+      gameType: game.gameType,
+      roundNumber: round.roundNumber || game.currentRoundNumber || 1,
+      startLetter: round.startLetter,
+      endLetter: round.endLetter,
+      players: round.submissions.map(sub => ({
+        name: sub.playerName,
+        word: sub.word,
+        submittedAt: sub.timestamp || new Date(),
+        skipped: sub.skipped || false
+      })),
+      winner: winner?.name || null,
+      winningWord: round.winningWord || null,
+      winningReason: round.winningReason || null,
+      roundWords: game.roundWords || [],
+      startedAt: new Date(round.startTime),
+      endedAt: new Date(round.endTime),
+      duration: round.endTime - round.startTime
+    });
+    roundLog.save().catch(err => console.error('Error logging round:', err));
     
     // Battle Royale: Include all words and winning reason
     if (game.gameType === 'battle-royale') {
@@ -579,6 +652,22 @@ io.on('connection', (socket) => {
     const gameWinner = game.players.find(p => p.score >= game.roundsToWin);
     if (gameWinner) {
       game.status = 'finished';
+      game.endTime = Date.now();
+      
+      // Log game result to MongoDB
+      const gameResult = new GameResult({
+        gameId: gameId,
+        gameType: game.gameType,
+        winner: gameWinner.name,
+        players: game.players.map(p => ({
+          name: p.name,
+          finalScore: p.score
+        })),
+        totalRounds: game.currentRoundNumber || 1,
+        duration: game.endTime - game.startTime
+      });
+      gameResult.save().catch(err => console.error('Error logging game result:', err));
+      
       setTimeout(() => {
         io.to(gameId).emit('game-ended', { winner: gameWinner.name, scores: game.players.map(p => ({ name: p.name, score: p.score })) });
       }, 3000);
