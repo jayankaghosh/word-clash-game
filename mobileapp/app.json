@@ -32,6 +32,15 @@
       "eas": {
         "projectId": "043e0a95-0c1c-4719-bbda-2e83cb805f08"
       }
-    }
+    },
+    "plugins": [
+      [
+        "react-native-webrtc",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera for video calls.",
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone for voice chat."
+        }
+      ]
+    ]
   }
 }

@@ -1,7 +1,18 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { RTCPeerConnection, RTCIceCandidate, RTCSessionDescription, mediaDevices } from 'react-native-webrtc';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
-export const useVoiceChat = (socket, playerSocketId, opponentSocketId) => {
+// Check if WebRTC is available
+let RTCPeerConnection, RTCSessionDescription, RTCIceCandidate, mediaDevices;
+try {
+  const webrtc = require('react-native-webrtc');
+  RTCPeerConnection = webrtc.RTCPeerConnection;
+  RTCSessionDescription = webrtc.RTCSessionDescription;
+  RTCIceCandidate = webrtc.RTCIceCandidate;
+  mediaDevices = webrtc.mediaDevices;
+} catch (error) {
+  console.warn('WebRTC not available - voice chat disabled');
+}
+
+export function useVoiceChat(socket, playerSocketId, opponentSocketId) {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [opponentVoiceEnabled, setOpponentVoiceEnabled] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
@@ -9,6 +20,20 @@ export const useVoiceChat = (socket, playerSocketId, opponentSocketId) => {
 
   const peerConnection = useRef(null);
   const localStream = useRef(null);
+
+  // Check if WebRTC is available
+  const webrtcAvailable = !!(RTCPeerConnection && mediaDevices);
+  
+  if (!webrtcAvailable) {
+    return {
+      voiceEnabled: false,
+      opponentVoiceEnabled: false,
+      isConnected: false,
+      error: 'WebRTC not available. Build custom dev client to enable voice chat.',
+      toggleVoiceChat: () => console.log('WebRTC not available'),
+      remoteAudio: { current: null }
+    };
+  }
 
   // ICE servers for NAT traversal
   const iceServers = {
