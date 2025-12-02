@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import ScoreBoard from '../components/ScoreBoard';
 import LetterInput from '../components/LetterInput';
 import WordInput from '../components/WordInput';
 import RoundResult from '../components/RoundResult';
 import GameOver from '../components/GameOver';
+import { useVoiceChat } from '../utils/useVoiceChat';
 
 export default function GameScreen({ gameData, playerName, socket, soundManager, onGameEnd }) {
   const [phase, setPhase] = useState('waiting');
@@ -19,6 +21,19 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
   const [currentTurn, setCurrentTurn] = useState(null); // Battle Royale: whose turn
   const [roundWords, setRoundWords] = useState([]); // Battle Royale: words in this round
   const [timerKey, setTimerKey] = useState(0); // Key to force timer reset
+
+  // Get player and opponent socket IDs
+  const playerSocketId = socket?.id;
+  const opponentSocketId = gameData?.players?.find(p => p.id !== playerSocketId)?.id;
+
+  // Voice chat hook
+  const {
+    voiceEnabled,
+    opponentVoiceEnabled,
+    isConnected,
+    error: voiceError,
+    toggleVoiceChat
+  } = useVoiceChat(socket, playerSocketId, opponentSocketId);
 
   useEffect(() => {
     if (!socket) return;
@@ -153,6 +168,32 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
           roundsToWin={gameData.roundsToWin}
           currentScores={scores}
         />
+        
+        {/* Voice chat button */}
+        <TouchableOpacity 
+          style={[
+            styles.voiceButton,
+            voiceEnabled ? styles.voiceButtonActive : styles.voiceButtonInactive,
+            isConnected && styles.voiceButtonConnected
+          ]}
+          onPress={toggleVoiceChat}
+        >
+          <Ionicons 
+            name={voiceEnabled ? "mic" : "mic-off"} 
+            size={20} 
+            color="#fff" 
+          />
+        </TouchableOpacity>
+
+        {/* Voice status indicator */}
+        {opponentVoiceEnabled && (
+          <View style={styles.opponentVoiceIndicator}>
+            <Ionicons name="mic" size={12} color="#10b981" />
+            <Text style={styles.opponentVoiceText}>Opponent</Text>
+          </View>
+        )}
+
+        {/* Exit button */}
         <TouchableOpacity 
           style={styles.exitButton}
           onPress={handleExitGame}
@@ -160,6 +201,13 @@ export default function GameScreen({ gameData, playerName, socket, soundManager,
           <Text style={styles.exitButtonText}>❌</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Voice error notification */}
+      {voiceError && (
+        <View style={styles.voiceError}>
+          <Text style={styles.voiceErrorText}>Voice: {voiceError}</Text>
+        </View>
+      )}
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -285,6 +333,61 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     position: 'relative',
+  },
+  voiceButton: {
+    position: 'absolute',
+    top: 50,
+    right: 70,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  voiceButtonInactive: {
+    backgroundColor: 'rgba(107, 114, 128, 0.3)',
+    borderColor: 'rgba(107, 114, 128, 0.5)',
+  },
+  voiceButtonActive: {
+    backgroundColor: 'rgba(34, 197, 94, 0.5)',
+    borderColor: 'rgba(34, 197, 94, 0.7)',
+  },
+  voiceButtonConnected: {
+    borderWidth: 2,
+    borderColor: '#10b981',
+  },
+  opponentVoiceIndicator: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.5)',
+    gap: 5,
+  },
+  opponentVoiceText: {
+    color: '#10b981',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  voiceError: {
+    backgroundColor: 'rgba(249, 115, 22, 0.9)',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    marginHorizontal: 20,
+    marginTop: 10,
+    borderRadius: 10,
+  },
+  voiceErrorText: {
+    color: '#fff',
+    fontSize: 12,
+    textAlign: 'center',
   },
   exitButton: {
     position: 'absolute',

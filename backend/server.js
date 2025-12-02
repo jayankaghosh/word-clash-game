@@ -745,6 +745,55 @@ io.on('connection', (socket) => {
     console.log(`Game ${gameId} ended by ${playerName}, all sockets disconnected`);
   });
 
+  // WebRTC signaling for voice chat
+  socket.on('voice-offer', ({ targetSocketId, offer }) => {
+    console.log('Relaying voice offer from', socket.id, 'to', targetSocketId);
+    io.to(targetSocketId).emit('voice-offer', {
+      fromSocketId: socket.id,
+      offer
+    });
+  });
+
+  socket.on('voice-answer', ({ targetSocketId, answer }) => {
+    console.log('Relaying voice answer from', socket.id, 'to', targetSocketId);
+    io.to(targetSocketId).emit('voice-answer', {
+      fromSocketId: socket.id,
+      answer
+    });
+  });
+
+  socket.on('voice-ice-candidate', ({ targetSocketId, candidate }) => {
+    console.log('Relaying ICE candidate from', socket.id, 'to', targetSocketId);
+    io.to(targetSocketId).emit('voice-ice-candidate', {
+      fromSocketId: socket.id,
+      candidate
+    });
+  });
+
+  socket.on('voice-enabled', ({ enabled }) => {
+    const gameId = playerSockets.get(socket.id);
+    if (gameId) {
+      const game = games.get(gameId);
+      if (game) {
+        // Update player's voice status
+        const player = game.players.find(p => p.id === socket.id);
+        if (player) {
+          player.voiceEnabled = enabled;
+          // Notify all players in the game
+          io.to(gameId).emit('player-voice-status', {
+            socketId: socket.id,
+            enabled,
+            players: game.players.map(p => ({
+              id: p.id,
+              name: p.name,
+              voiceEnabled: p.voiceEnabled || false
+            }))
+          });
+        }
+      }
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
     

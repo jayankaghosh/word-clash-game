@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, Mic, MicOff } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import LetterInput from './LetterInput';
 import WordInput from './WordInput';
 import ScoreBoard from './ScoreBoard';
 import RoundResult from './RoundResult';
 import GameOver from './GameOver';
+import { useVoiceChat } from '../utils/useVoiceChat';
 
 function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
   const [phase, setPhase] = useState('waiting'); // waiting, letter-input, letters-revealed, word-input, round-end, game-over
@@ -18,6 +19,22 @@ function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
   const [gameResult, setGameResult] = useState(null);
   const [scores, setScores] = useState([]);
   const [notification, setNotification] = useState('');
+  
+  // Get player and opponent socket IDs
+  const playerSocketId = socket?.id;
+  const opponentSocketId = gameData?.players?.find(p => p.id !== playerSocketId)?.id;
+
+  // Voice chat hook
+  const {
+    voiceEnabled,
+    opponentVoiceEnabled,
+    isConnected,
+    error: voiceError,
+    toggleVoiceChat,
+    remoteAudio
+  } = useVoiceChat(socket, playerSocketId, opponentSocketId);
+
+  const remoteAudioRef = useRef(null);
 
   useEffect(() => {
     if (!socket) return;
@@ -152,13 +169,29 @@ function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
     }
   };
 
+  // Connect remote audio element
+  useEffect(() => {
+    if (remoteAudioRef.current) {
+      remoteAudio.current = remoteAudioRef.current;
+    }
+  }, [remoteAudio]);
+
   if (!gameData) return null;
 
   return (
     <div className="max-w-4xl w-full">
+      {/* Hidden audio element for remote voice */}
+      <audio ref={remoteAudioRef} autoPlay />
+
       {notification && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg slide-in z-50">
           {notification}
+        </div>
+      )}
+
+      {voiceError && (
+        <div className="fixed top-16 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-lg shadow-lg slide-in z-50">
+          Voice chat error: {voiceError}
         </div>
       )}
 
@@ -168,6 +201,29 @@ function GameRoom({ gameData, playerName, socket, soundManager, onGameEnd }) {
           roundsToWin={gameData.roundsToWin}
           currentScores={scores}
         />
+        
+        {/* Voice chat button */}
+        <button
+          onClick={toggleVoiceChat}
+          className={`absolute top-2 right-14 p-2 rounded-full border transition-all ${
+            voiceEnabled 
+              ? 'bg-green-500/50 hover:bg-green-500/70 border-green-500/70 text-white' 
+              : 'bg-gray-500/30 hover:bg-gray-500/50 border-gray-500/50 text-white/70'
+          } ${isConnected ? 'ring-2 ring-green-400' : ''}`}
+          title={voiceEnabled ? 'Mute microphone' : 'Enable voice chat'}
+        >
+          {voiceEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+        </button>
+
+        {/* Voice status indicator */}
+        {opponentVoiceEnabled && (
+          <div className="absolute top-2 left-2 bg-green-500/30 text-green-300 px-3 py-1 rounded-full text-xs flex items-center gap-1 border border-green-500/50">
+            <Mic className="w-3 h-3" />
+            Opponent mic on
+          </div>
+        )}
+
+        {/* Exit button */}
         <button
           onClick={handleExitGame}
           className="absolute top-2 right-2 bg-red-500/30 hover:bg-red-500/50 text-white p-2 rounded-full border border-red-500/50 transition-all"
