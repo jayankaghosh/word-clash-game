@@ -162,12 +162,8 @@ export const useVoiceChat = (socket, playerSocketId, opponentSocketId) => {
           localStream.current = stream;
         }
 
+        // Create peer connection (tracks will be added automatically in createPeerConnection)
         const pc = createPeerConnection();
-        
-        // Add local tracks
-        localStream.current.getTracks().forEach(track => {
-          pc.addTrack(track, localStream.current);
-        });
 
         // Set remote description and create answer
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
