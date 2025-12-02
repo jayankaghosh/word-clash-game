@@ -34,7 +34,9 @@ npm install
 echo -e "${GREEN}✓ Frontend dependencies installed${NC}"
 
 echo -e "${BLUE}🏗️  Building frontend...${NC}"
-npm run build
+rm -r build
+mv build_prod build
+# npm run build
 echo -e "${GREEN}✓ Frontend built successfully${NC}"
 
 # Step 3: Restart backend with PM2
