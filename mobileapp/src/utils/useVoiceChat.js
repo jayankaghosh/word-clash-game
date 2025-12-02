@@ -68,6 +68,11 @@ export const useVoiceChat = (socket, playerSocketId, opponentSocketId) => {
       }
     };
 
+    // Add local stream if available
+    if (localStream.current && pc.getLocalStreams().length === 0) {
+      pc.addStream(localStream.current);
+    }
+
     peerConnection.current = pc;
     return pc;
   }, [socket, opponentSocketId]);
@@ -84,19 +89,25 @@ export const useVoiceChat = (socket, playerSocketId, opponentSocketId) => {
       });
       localStream.current = stream;
 
-      // Create peer connection and add stream
+      // Create peer connection
       const pc = createPeerConnection();
-      pc.addStream(stream);
+      
+      // Check if stream is already added to avoid duplicates
+      if (pc.getLocalStreams().length === 0) {
+        pc.addStream(stream);
+      }
 
-      // Create and send offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+      // Only create offer if we have an opponent
+      if (opponentSocketId) {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
 
-      console.log('Sending voice offer to opponent');
-      socket.emit('voice-offer', {
-        targetSocketId: opponentSocketId,
-        offer: pc.localDescription
-      });
+        console.log('Sending voice offer to opponent');
+        socket.emit('voice-offer', {
+          targetSocketId: opponentSocketId,
+          offer: pc.localDescription
+        });
+      }
 
       setVoiceEnabled(true);
       socket.emit('voice-enabled', { enabled: true });

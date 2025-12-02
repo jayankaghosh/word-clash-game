@@ -55,14 +55,16 @@ For Android, add to `AndroidManifest.xml`:
 
 ### For Players
 
-1. **Start a game** with another player
-2. **Click the microphone button** (disabled by default)
+1. **Join or create a game** and wait in lobby
+2. **Click the microphone button** (disabled by default, appears in lobby)
    - Grey = Mic off
    - Green = Mic on
    - Green with ring = Connected to opponent
 3. **Grant microphone permission** when prompted by browser/app
-4. **Talk freely** during the game
+4. **Talk freely** in the lobby and during the game
 5. **Toggle off** when done
+
+**Note**: The mic button is available in both the lobby screen and during gameplay.
 
 ### Visual Indicators
 

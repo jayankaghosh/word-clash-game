@@ -1,10 +1,27 @@
-import React, { useEffect } from 'react';
-import { Copy, Users, Trophy, ArrowLeft } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { Copy, Users, Trophy, ArrowLeft, Mic, MicOff } from 'lucide-react';
 import copy from 'copy-to-clipboard';
+import { useVoiceChat } from '../utils/useVoiceChat';
 
 function Lobby({ gameData, playerName, onStartGame, socket, soundManager, onGameStart, onLeaveLobby }) {
   const isCreator = gameData && socket && gameData.creator === socket.id;
   const canStart = gameData && gameData.players.length === 2;
+
+  // Get player and opponent socket IDs
+  const playerSocketId = socket?.id;
+  const opponentSocketId = gameData?.players?.find(p => p.id !== playerSocketId)?.id;
+
+  // Voice chat hook
+  const {
+    voiceEnabled,
+    opponentVoiceEnabled,
+    isConnected,
+    error: voiceError,
+    toggleVoiceChat,
+    remoteAudio
+  } = useVoiceChat(socket, playerSocketId, opponentSocketId);
+
+  const remoteAudioRef = useRef(null);
 
   useEffect(() => {
     if (!socket) return;
@@ -18,6 +35,13 @@ function Lobby({ gameData, playerName, onStartGame, socket, soundManager, onGame
       socket.off('game-started');
     };
   }, [socket, soundManager, onGameStart]);
+
+  // Connect remote audio element
+  useEffect(() => {
+    if (remoteAudioRef.current) {
+      remoteAudio.current = remoteAudioRef.current;
+    }
+  }, [remoteAudio]);
 
   const copyGameCode = () => {
     copy(gameData.gameId);
@@ -36,6 +60,16 @@ function Lobby({ gameData, playerName, onStartGame, socket, soundManager, onGame
 
   return (
     <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl shadow-2xl p-8 md:p-12 max-w-md w-full border border-white/20">
+      {/* Hidden audio element for remote voice */}
+      <audio ref={remoteAudioRef} autoPlay />
+
+      {/* Voice error notification */}
+      {voiceError && (
+        <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-orange-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 w-full max-w-sm text-center">
+          Voice: {voiceError}
+        </div>
+      )}
+
       <button
         onClick={handleLeaveLobby}
         className="absolute top-4 left-4 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full border border-white/30 transition-all"
@@ -43,6 +77,27 @@ function Lobby({ gameData, playerName, onStartGame, socket, soundManager, onGame
       >
         <ArrowLeft className="w-5 h-5" />
       </button>
+
+      {/* Voice chat button */}
+      <button
+        onClick={toggleVoiceChat}
+        className={`absolute top-4 right-4 p-2 rounded-full border transition-all ${
+          voiceEnabled 
+            ? 'bg-green-500/50 hover:bg-green-500/70 border-green-500/70 text-white' 
+            : 'bg-gray-500/30 hover:bg-gray-500/50 border-gray-500/50 text-white/70'
+        } ${isConnected ? 'ring-2 ring-green-400' : ''}`}
+        title={voiceEnabled ? 'Mute microphone' : 'Enable voice chat'}
+      >
+        {voiceEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+      </button>
+
+      {/* Voice status indicator */}
+      {opponentVoiceEnabled && (
+        <div className="absolute top-16 right-4 bg-green-500/30 text-green-300 px-3 py-1 rounded-full text-xs flex items-center gap-1 border border-green-500/50">
+          <Mic className="w-3 h-3" />
+          Opponent
+        </div>
+      )}
       <div className="text-center mb-8">
         <Users className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
         <h2 className="text-3xl font-bold text-white mb-2">Game Lobby</h2>

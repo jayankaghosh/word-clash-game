@@ -1,7 +1,9 @@
 import React, { useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Share, Alert } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
+import { useVoiceChat } from '../utils/useVoiceChat';
 
 export default function LobbyScreen({ gameData, playerName, onStartGame, socket, soundManager, onGameStart, onLeaveLobby }) {
   // Debug: Log when gameData changes
@@ -9,6 +11,19 @@ export default function LobbyScreen({ gameData, playerName, onStartGame, socket,
     console.log('LobbyScreen - gameData updated:', gameData);
     console.log('LobbyScreen - players:', gameData?.players);
   }, [gameData]);
+
+  // Get player and opponent socket IDs
+  const playerSocketId = socket?.id;
+  const opponentSocketId = gameData?.players?.find(p => p.id !== playerSocketId)?.id;
+
+  // Voice chat hook
+  const {
+    voiceEnabled,
+    opponentVoiceEnabled,
+    isConnected,
+    error: voiceError,
+    toggleVoiceChat
+  } = useVoiceChat(socket, playerSocketId, opponentSocketId);
 
   useEffect(() => {
     if (!socket) return;
@@ -76,6 +91,37 @@ export default function LobbyScreen({ gameData, playerName, onStartGame, socket,
       >
         <Text style={styles.backButtonText}>←</Text>
       </TouchableOpacity>
+
+      {/* Voice chat button */}
+      <TouchableOpacity 
+        style={[
+          styles.voiceButton,
+          voiceEnabled ? styles.voiceButtonActive : styles.voiceButtonInactive,
+          isConnected && styles.voiceButtonConnected
+        ]}
+        onPress={toggleVoiceChat}
+      >
+        <Ionicons 
+          name={voiceEnabled ? "mic" : "mic-off"} 
+          size={20} 
+          color="#fff" 
+        />
+      </TouchableOpacity>
+
+      {/* Voice status indicator */}
+      {opponentVoiceEnabled && (
+        <View style={styles.opponentVoiceIndicator}>
+          <Ionicons name="mic" size={12} color="#10b981" />
+          <Text style={styles.opponentVoiceText}>Opponent</Text>
+        </View>
+      )}
+
+      {/* Voice error notification */}
+      {voiceError && (
+        <View style={styles.voiceError}>
+          <Text style={styles.voiceErrorText}>Voice: {voiceError}</Text>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
@@ -174,6 +220,66 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: '#fff',
     fontWeight: 'bold',
+  },
+  voiceButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+  },
+  voiceButtonInactive: {
+    backgroundColor: 'rgba(107, 114, 128, 0.3)',
+    borderColor: 'rgba(107, 114, 128, 0.5)',
+  },
+  voiceButtonActive: {
+    backgroundColor: 'rgba(34, 197, 94, 0.5)',
+    borderColor: 'rgba(34, 197, 94, 0.7)',
+  },
+  voiceButtonConnected: {
+    borderWidth: 2,
+    borderColor: '#10b981',
+  },
+  opponentVoiceIndicator: {
+    position: 'absolute',
+    top: 100,
+    right: 20,
+    zIndex: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(34, 197, 94, 0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(34, 197, 94, 0.5)',
+    gap: 5,
+  },
+  opponentVoiceText: {
+    color: '#10b981',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  voiceError: {
+    position: 'absolute',
+    top: 100,
+    left: 20,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: 'rgba(249, 115, 22, 0.9)',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+  },
+  voiceErrorText: {
+    color: '#fff',
+    fontSize: 12,
+    textAlign: 'center',
   },
   scrollContent: {
     flexGrow: 1,

@@ -69,6 +69,18 @@ export const useVoiceChat = (socket, playerSocketId, opponentSocketId) => {
       }
     };
 
+    // Add local tracks if available
+    if (localStream.current) {
+      localStream.current.getTracks().forEach(track => {
+        // Check if track already exists to avoid duplicates
+        const senders = pc.getSenders();
+        const trackExists = senders.some(sender => sender.track === track);
+        if (!trackExists) {
+          pc.addTrack(track, localStream.current);
+        }
+      });
+    }
+
     peerConnection.current = pc;
     return pc;
   }, [socket, opponentSocketId]);
@@ -82,21 +94,29 @@ export const useVoiceChat = (socket, playerSocketId, opponentSocketId) => {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localStream.current = stream;
 
-      // Create peer connection and add tracks
+      // Create peer connection
       const pc = createPeerConnection();
+      
+      // Add tracks only if not already added
       stream.getTracks().forEach(track => {
-        pc.addTrack(track, stream);
+        const senders = pc.getSenders();
+        const trackExists = senders.some(sender => sender.track === track);
+        if (!trackExists) {
+          pc.addTrack(track, stream);
+        }
       });
 
-      // Create and send offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+      // Only create offer if we have an opponent
+      if (opponentSocketId) {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
 
-      console.log('Sending voice offer to opponent');
-      socket.emit('voice-offer', {
-        targetSocketId: opponentSocketId,
-        offer
-      });
+        console.log('Sending voice offer to opponent');
+        socket.emit('voice-offer', {
+          targetSocketId: opponentSocketId,
+          offer
+        });
+      }
 
       setVoiceEnabled(true);
       socket.emit('voice-enabled', { enabled: true });
