@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Audio } from 'expo-av';
-import { SOCKET_URL } from '@env';
+import Constants from 'expo-constants';
 
 class SoundManager {
   constructor() {
@@ -10,7 +10,8 @@ class SoundManager {
     this.bgMusic = null;
     this.isReady = false;
     this.shouldAutoPlay = false;
-    this.baseUrl = SOCKET_URL || 'http://localhost:3001';
+    const socketUrl = Constants.expoConfig?.extra?.socketUrl || 'https://www.wordclash.online';
+    this.baseUrl = socketUrl;
     this.initAudio();
   }
 

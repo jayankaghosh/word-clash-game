@@ -1,0 +1,40 @@
+import 'dotenv/config';
+
+export default {
+  expo: {
+    name: "Word Clash Mobile",
+    slug: "word-clash",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/icon.png",
+    userInterfaceStyle: "dark",
+    splash: {
+      image: "./assets/splash.png",
+      resizeMode: "contain",
+      backgroundColor: "#4c1d95"
+    },
+    assetBundlePatterns: [
+      "**/*"
+    ],
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: "com.wordclash.app"
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#4c1d95"
+      },
+      package: "com.wordclash.app"
+    },
+    web: {
+      favicon: "./assets/favicon.png"
+    },
+    extra: {
+      eas: {
+        projectId: "043e0a95-0c1c-4719-bbda-2e83cb805f08"
+      },
+      socketUrl: process.env.SOCKET_URL || "https://www.wordclash.online"
+    }
+  }
+};

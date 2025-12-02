@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Modal } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { WebView } from 'react-native-webview';
-import { SOCKET_URL } from '@env';
+import Constants from 'expo-constants';
+
+const SOCKET_URL = Constants.expoConfig?.extra?.socketUrl || 'https://www.wordclash.online';
 
 export default function WelcomeScreen({ onCreateGame, onJoinGame, error, savedName, gameConfig, soundManager }) {
   const [name, setName] = useState(savedName || '');

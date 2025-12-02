@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import io from 'socket.io-client';
-import { SOCKET_URL } from '@env';
+import Constants from 'expo-constants';
 import WelcomeScreen from './src/screens/WelcomeScreen';
 import LobbyScreen from './src/screens/LobbyScreen';
 import GameScreen from './src/screens/GameScreen';
 import SoundManager from './src/utils/SoundManager';
 import MuteButton from './src/components/MuteButton';
+
+// Get socket URL from expo config
+const SOCKET_URL = Constants.expoConfig?.extra?.socketUrl || 'https://www.wordclash.online';
 
 export default function App() {
   const [socket, setSocket] = useState(null);
