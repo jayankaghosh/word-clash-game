@@ -21,19 +21,29 @@ function LetterInput({ role, socket, soundManager, letterTime }) {
     }
   };
 
-  const handleKeyPress = (e) => {
-    const key = e.key.toUpperCase();
-    if (/^[A-Z]$/.test(key)) {
-      setLetter(key);
-      // Auto-submit after typing
-      setTimeout(() => {
-        if (!submitted) {
-          socket.emit('submit-letter', { letter: key });
-          setSubmitted(true);
-          soundManager.play('submit');
-        }
-      }, 100);
+  const handleChange = (e) => {
+    const value = e.target.value.toUpperCase();
+    // Only accept A-Z letters
+    if (/^[A-Z]?$/.test(value)) {
+      setLetter(value);
+      
+      // Auto-submit when a letter is entered
+      if (value && !submitted) {
+        setTimeout(() => {
+          if (!submitted) {
+            socket.emit('submit-letter', { letter: value });
+            setSubmitted(true);
+            soundManager.play('submit');
+          }
+        }, 100);
+      }
     }
+  };
+
+  const handleInputFocus = (e) => {
+    setTimeout(() => {
+      e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 300);
   };
 
   return (
@@ -52,13 +62,14 @@ function LetterInput({ role, socket, soundManager, letterTime }) {
           ref={inputRef}
           type="text"
           value={letter}
-          onKeyPress={handleKeyPress}
-          onChange={() => {}} // Controlled by keypress
+          onChange={handleChange}
+          onFocus={handleInputFocus}
           className="w-full text-center text-6xl font-bold py-8 rounded-2xl bg-white/20 border-2 border-white/30 text-white placeholder-white/30 focus:outline-none focus:ring-4 focus:ring-yellow-400 uppercase"
           placeholder="?"
           maxLength={1}
           disabled={submitted}
           autoComplete="off"
+          inputMode="text"
         />
         
         {submitted && (
