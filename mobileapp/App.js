@@ -38,8 +38,11 @@ export default function App() {
 
   useEffect(() => {
     const newSocket = io(SOCKET_URL, {
-      transports: ['websocket'],
-      reconnection: true
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5
     });
     
     setSocket(newSocket);
@@ -55,6 +58,29 @@ export default function App() {
 
     newSocket.on('connect', () => {
       console.log('Connected to server');
+    });
+
+    newSocket.on('reconnect', (attemptNumber) => {
+      console.log('Reconnected after', attemptNumber, 'attempts');
+      // If we're in a game, try to rejoin
+      if (gameData && playerName) {
+        console.log('Attempting to rejoin game:', gameData.gameId);
+      }
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.log('Disconnected:', reason);
+      // Don't redirect on transport close or ping timeout (temporary)
+      if (reason === 'io server disconnect') {
+        // Server intentionally disconnected, redirect to welcome
+        setError('Disconnected from server');
+        setTimeout(() => {
+          setError('');
+          setScreen('welcome');
+          setGameData(null);
+        }, 2000);
+      }
+      // For other reasons (transport close, ping timeout), let reconnection handle it
     });
 
     newSocket.on('game-config', (config) => {
@@ -83,14 +109,26 @@ export default function App() {
       soundManager.play('join');
     });
 
-    newSocket.on('player-disconnected', ({ message }) => {
+    newSocket.on('player-disconnected', ({ message, permanent }) => {
       setError(message);
       soundManager.play('error');
-      setTimeout(() => {
-        setError('');
-        setScreen('welcome');
-        setGameData(null);
-      }, 3000);
+      // Only redirect if it's a permanent disconnection
+      if (permanent) {
+        setTimeout(() => {
+          setError('');
+          setScreen('welcome');
+          setGameData(null);
+        }, 3000);
+      } else {
+        // Clear error after showing temporary disconnection
+        setTimeout(() => setError(''), 5000);
+      }
+    });
+
+    newSocket.on('player-reconnected', ({ message }) => {
+      setError(message);
+      soundManager.play('join');
+      setTimeout(() => setError(''), 2000);
     });
 
     newSocket.on('player-left-lobby', ({ message }) => {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Timer from './Timer';
 
-function LetterInput({ role, socket, soundManager, letterTime }) {
+function LetterInput({ role, socket, soundManager, letterTime, onSubmit }) {
   const [letter, setLetter] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const inputRef = useRef(null);
@@ -15,9 +15,18 @@ function LetterInput({ role, socket, soundManager, letterTime }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (letter && !submitted) {
-      socket.emit('submit-letter', { letter: letter.toUpperCase() });
       setSubmitted(true);
-      soundManager.play('submit');
+      
+      // Use onSubmit callback for offline mode, socket for online mode
+      if (onSubmit) {
+        onSubmit(letter.toUpperCase());
+      } else if (socket) {
+        socket.emit('submit-letter', { letter: letter.toUpperCase() });
+      }
+      
+      if (soundManager) {
+        soundManager.play('submit');
+      }
     }
   };
 
@@ -31,9 +40,18 @@ function LetterInput({ role, socket, soundManager, letterTime }) {
       if (value && !submitted) {
         setTimeout(() => {
           if (!submitted) {
-            socket.emit('submit-letter', { letter: value });
             setSubmitted(true);
-            soundManager.play('submit');
+            
+            // Use onSubmit callback for offline mode, socket for online mode
+            if (onSubmit) {
+              onSubmit(value);
+            } else if (socket) {
+              socket.emit('submit-letter', { letter: value });
+            }
+            
+            if (soundManager) {
+              soundManager.play('submit');
+            }
           }
         }, 100);
       }

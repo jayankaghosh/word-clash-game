@@ -13,17 +13,16 @@ const Game = require('./models/Game');
 const Round = require('./models/Round');
 const GameResult = require('./models/GameResult');
 
-// Load word-list (Oxford English Dictionary)
+// Load dictionary from JSON file
 let words = [];
 try {
-  const wordList = require('word-list');
-  const wordListPath = wordList.default || wordList;
-  const wordListFile = fs.readFileSync(wordListPath, 'utf-8');
-  words = wordListFile.split('\n').filter(w => w.trim().length >= 3 && w.trim().length <= 15).map(w => w.trim());
-  console.log('Loaded Oxford English Dictionary from word-list package');
+  const dictionaryPath = path.join(__dirname, 'dictionary.json');
+  const dictionaryFile = fs.readFileSync(dictionaryPath, 'utf-8');
+  words = JSON.parse(dictionaryFile);
+  console.log('✅ Loaded dictionary from dictionary.json');
 } catch (error) {
-  console.error('Error loading word-list, falling back to an-array-of-english-words:', error.message);
-  words = require('an-array-of-english-words').filter(w => w.length >= 3 && w.length <= 15);
+  console.error('❌ Error loading dictionary.json:', error.message);
+  process.exit(1);
 }
 
 const app = express();
@@ -75,6 +74,11 @@ app.get('/api/config', (req, res) => {
   res.json(gameConfig);
 });
 
+// API endpoint to serve dictionary for offline mode
+app.get('/api/dictionary', (req, res) => {
+  res.json(words);
+});
+
 // Create dictionary index by first and last letter
 const wordSet = new Set(words.map(w => w.toLowerCase()));
 const wordsByFirstLast = {};
@@ -96,6 +100,7 @@ console.log(`Loaded ${words.length} words into dictionary`);
 // In-memory game storage
 const games = new Map();
 const playerSockets = new Map(); // socketId -> gameId
+const disconnectTimers = new Map(); // Track temporary disconnections
 
 // Generate unique game code
 function generateGameCode() {
@@ -801,23 +806,57 @@ io.on('connection', (socket) => {
     if (gameId) {
       const game = games.get(gameId);
       if (game) {
-        // Notify other players
-        io.to(gameId).emit('player-disconnected', { message: 'Opponent disconnected' });
-        
-        // Disconnect all sockets from the room
-        game.players.forEach(p => {
-          const playerSocket = io.sockets.sockets.get(p.id);
-          if (playerSocket) {
-            playerSocket.leave(gameId);
-          }
-          playerSockets.delete(p.id);
+        // Notify other players (temporary disconnection)
+        io.to(gameId).emit('player-disconnected', { 
+          message: 'Opponent temporarily disconnected. Waiting for reconnection...', 
+          permanent: false 
         });
         
-        // Clean up the game
-        games.delete(gameId);
+        // Set a grace period for reconnection (30 seconds)
+        const timer = setTimeout(() => {
+          console.log('Grace period expired for:', socket.id);
+          const currentGame = games.get(gameId);
+          if (currentGame) {
+            // Notify permanent disconnection
+            io.to(gameId).emit('player-disconnected', { 
+              message: 'Opponent disconnected', 
+              permanent: true 
+            });
+            
+            // Disconnect all sockets from the room
+            currentGame.players.forEach(p => {
+              const playerSocket = io.sockets.sockets.get(p.id);
+              if (playerSocket) {
+                playerSocket.leave(gameId);
+              }
+              playerSockets.delete(p.id);
+            });
+            
+            // Clean up the game
+            games.delete(gameId);
+          }
+          disconnectTimers.delete(socket.id);
+        }, 30000); // 30 second grace period
+        
+        disconnectTimers.set(socket.id, timer);
       } else {
         playerSockets.delete(socket.id);
       }
+    }
+  });
+
+  // Handle reconnection
+  socket.on('reconnect', () => {
+    console.log('Client reconnected:', socket.id);
+    const gameId = playerSockets.get(socket.id);
+    if (gameId && disconnectTimers.has(socket.id)) {
+      // Clear the disconnect timer
+      clearTimeout(disconnectTimers.get(socket.id));
+      disconnectTimers.delete(socket.id);
+      
+      // Notify opponent of reconnection
+      socket.to(gameId).emit('player-reconnected', { message: 'Opponent reconnected' });
+      console.log('Reconnection successful, timer cleared for:', socket.id);
     }
   });
 });

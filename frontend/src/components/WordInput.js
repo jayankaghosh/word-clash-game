@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Send } from 'lucide-react';
 import Timer from './Timer';
 
-function WordInput({ startLetter, endLetter, socket, soundManager, wordTime, disabled }) {
+function WordInput({ startLetter, endLetter, socket, soundManager, wordTime, disabled, onSubmit, onSkip }) {
   const [word, setWord] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const inputRef = useRef(null);
@@ -55,15 +55,42 @@ function WordInput({ startLetter, endLetter, socket, soundManager, wordTime, dis
     if (!word.trim() || submitted || disabled) return;
     
     setSubmitted(true);
-    socket.emit('submit-word', { word: word.trim() });
-    soundManager.play('submit');
+    
+    // Use onSubmit callback for offline mode, socket for online mode
+    if (onSubmit) {
+      // Offline mode - pass retry callback to reset state if word is invalid
+      onSubmit(word.trim(), () => {
+        setSubmitted(false);
+        setWord('');
+        setTimeout(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+          }
+        }, 100);
+      });
+    } else if (socket) {
+      socket.emit('submit-word', { word: word.trim() });
+    }
+    
+    if (soundManager) {
+      soundManager.play('submit');
+    }
   };
 
   const handleSkip = () => {
     if (submitted || disabled) return;
     setSubmitted(true);
-    socket.emit('skip-round');
-    soundManager.play('click');
+    
+    // Use onSkip callback for offline mode, socket for online mode
+    if (onSkip) {
+      onSkip();
+    } else if (socket) {
+      socket.emit('skip-round');
+    }
+    
+    if (soundManager) {
+      soundManager.play('click');
+    }
   };
 
   const handleInputFocus = (e) => {

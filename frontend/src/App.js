@@ -3,6 +3,7 @@ import io from 'socket.io-client';
 import WelcomeScreen from './components/WelcomeScreen';
 import Lobby from './components/Lobby';
 import GameRoom from './components/GameRoom';
+import OfflineGameRoom from './components/OfflineGameRoom';
 import MuteButton from './components/MuteButton';
 import SoundManager from './utils/SoundManager';
 
@@ -12,13 +13,14 @@ const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:3001';
 
 function App() {
   const [socket, setSocket] = useState(null);
-  const [screen, setScreen] = useState('welcome'); // welcome, lobby, game
+  const [screen, setScreen] = useState('welcome'); // welcome, lobby, game, offline-game
   const [playerName, setPlayerName] = useState('');
   const [gameData, setGameData] = useState(null);
   const [error, setError] = useState('');
   const [soundManager] = useState(() => new SoundManager());
   const [savedName, setSavedName] = useState('');
   const [gameConfig, setGameConfig] = useState(null);
+  const [offlineConfig, setOfflineConfig] = useState(null);
 
   // Load saved name from localStorage on mount
   useEffect(() => {
@@ -29,7 +31,13 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const newSocket = io(SOCKET_URL);
+    const newSocket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5
+    });
     setSocket(newSocket);
 
     // Start background music on first user interaction
@@ -47,6 +55,29 @@ function App() {
 
     newSocket.on('connect', () => {
       console.log('Connected to server');
+    });
+
+    newSocket.on('reconnect', (attemptNumber) => {
+      console.log('Reconnected after', attemptNumber, 'attempts');
+      // If we're in a game, try to rejoin
+      if (gameData && playerName) {
+        console.log('Attempting to rejoin game:', gameData.gameId);
+      }
+    });
+
+    newSocket.on('disconnect', (reason) => {
+      console.log('Disconnected:', reason);
+      // Don't redirect on transport close or ping timeout (temporary)
+      if (reason === 'io server disconnect') {
+        // Server intentionally disconnected, redirect to welcome
+        setError('Disconnected from server');
+        setTimeout(() => {
+          setError('');
+          setScreen('welcome');
+          setGameData(null);
+        }, 2000);
+      }
+      // For other reasons (transport close, ping timeout), let reconnection handle it
     });
 
     newSocket.on('game-config', (config) => {
@@ -72,14 +103,26 @@ function App() {
       soundManager.play('join');
     });
 
-    newSocket.on('player-disconnected', ({ message }) => {
+    newSocket.on('player-disconnected', ({ message, permanent }) => {
       setError(message);
       soundManager.play('error');
-      setTimeout(() => {
-        setError('');
-        setScreen('welcome');
-        setGameData(null);
-      }, 3000);
+      // Only redirect if it's a permanent disconnection
+      if (permanent) {
+        setTimeout(() => {
+          setError('');
+          setScreen('welcome');
+          setGameData(null);
+        }, 3000);
+      } else {
+        // Clear error after showing temporary disconnection
+        setTimeout(() => setError(''), 5000);
+      }
+    });
+
+    newSocket.on('player-reconnected', ({ message }) => {
+      setError(message);
+      soundManager.play('join');
+      setTimeout(() => setError(''), 2000);
     });
 
     newSocket.on('player-left-lobby', ({ message }) => {
@@ -141,6 +184,20 @@ function App() {
     setGameData(null);
   };
 
+  const handlePlayOffline = (name, difficulty, rounds, letterTime, wordTime, gameType) => {
+    setPlayerName(name);
+    localStorage.setItem('wordClashPlayerName', name);
+    setOfflineConfig({
+      difficulty,
+      roundsToWin: rounds,
+      letterTime,
+      wordTime,
+      gameType: gameType || 'normal'
+    });
+    setScreen('offline-game');
+    soundManager.play('success');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <MuteButton soundManager={soundManager} />
@@ -155,6 +212,7 @@ function App() {
         <WelcomeScreen 
           onCreateGame={handleCreateGame}
           onJoinGame={handleJoinGame}
+          onPlayOffline={handlePlayOffline}
           savedName={savedName}
           gameConfig={gameConfig}
         />
@@ -179,6 +237,19 @@ function App() {
           socket={socket}
           soundManager={soundManager}
           onGameEnd={() => setScreen('welcome')}
+        />
+      )}
+
+      {screen === 'offline-game' && offlineConfig && (
+        <OfflineGameRoom
+          playerName={playerName}
+          difficulty={offlineConfig.difficulty}
+          config={offlineConfig}
+          soundManager={soundManager}
+          onGameEnd={() => {
+            setScreen('welcome');
+            setOfflineConfig(null);
+          }}
         />
       )}
     </div>

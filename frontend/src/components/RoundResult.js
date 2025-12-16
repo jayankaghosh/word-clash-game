@@ -1,14 +1,26 @@
 import React from 'react';
 import { Trophy, Award } from 'lucide-react';
 
-function RoundResult({ result, playerName, gameData, socket, soundManager }) {
+function RoundResult({ result, playerName, gameData, socket, soundManager, onNextRound, isCreator, gameType }) {
   const isDraw = !result.winner;
   const isWinner = result.winner === playerName;
-  const isCreator = socket?.id === gameData?.creator;
+  
+  // Use props for offline mode, or gameData for online mode
+  const actualIsCreator = isCreator !== undefined ? isCreator : (socket?.id === gameData?.creator);
+  const actualGameType = gameType || gameData?.gameType || 'normal';
 
   const handleStartNextRound = () => {
-    socket.emit('start-next-round');
-    soundManager.play('click');
+    if (onNextRound) {
+      // Offline mode - use callback
+      onNextRound();
+    } else if (socket) {
+      // Online mode - emit to server
+      socket.emit('start-next-round');
+    }
+    
+    if (soundManager) {
+      soundManager.play('click');
+    }
   };
 
   return (
@@ -29,7 +41,7 @@ function RoundResult({ result, playerName, gameData, socket, soundManager }) {
           <h2 className={`text-4xl font-bold mb-4 ${isWinner ? 'text-yellow-400' : 'text-red-400'}`}>
             {isWinner ? 'You Won!' : 'You Lost'}
           </h2>
-          {gameData.gameType === 'battle-royale' ? (
+          {actualGameType === 'battle-royale' ? (
             <div className="text-center mb-6">
               <p className="text-xl text-white/80 mb-4">{result.winningReason}</p>
               {result.roundWords && result.roundWords.length > 0 && (
@@ -64,7 +76,7 @@ function RoundResult({ result, playerName, gameData, socket, soundManager }) {
         </>
       )}
       
-      {isCreator ? (
+      {actualIsCreator ? (
         <button
           onClick={handleStartNextRound}
           className="mt-8 px-8 py-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold rounded-xl hover:from-yellow-600 hover:to-orange-600 transition-all transform hover:scale-105"

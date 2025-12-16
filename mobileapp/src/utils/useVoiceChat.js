@@ -48,7 +48,6 @@ export function useVoiceChat(socket, playerSocketId, opponentSocketId) {
     
     if (localStream.current) {
       localStream.current.getTracks().forEach(track => track.stop());
-      localStream.current.release();
       localStream.current = null;
     }
 
@@ -69,7 +68,7 @@ export function useVoiceChat(socket, playerSocketId, opponentSocketId) {
     const pc = new RTCPeerConnection(iceServers);
 
     pc.onicecandidate = (event) => {
-      if (event.candidate && opponentSocketId) {
+      if (event.candidate && opponentSocketId && socket) {
         console.log('Sending ICE candidate to opponent');
         socket.emit('voice-ice-candidate', {
           targetSocketId: opponentSocketId,
@@ -103,6 +102,16 @@ export function useVoiceChat(socket, playerSocketId, opponentSocketId) {
   }, [socket, opponentSocketId]);
 
   const startVoiceChat = useCallback(async () => {
+    if (!socket) {
+      setError('Socket not connected');
+      return;
+    }
+
+    if (!mediaDevices || !mediaDevices.getUserMedia) {
+      setError('Microphone access not available');
+      return;
+    }
+
     try {
       setError(null);
       console.log('Starting voice chat...');
@@ -148,7 +157,9 @@ export function useVoiceChat(socket, playerSocketId, opponentSocketId) {
     console.log('Stopping voice chat...');
     cleanup();
     setVoiceEnabled(false);
-    socket.emit('voice-enabled', { enabled: false });
+    if (socket) {
+      socket.emit('voice-enabled', { enabled: false });
+    }
   }, [socket, cleanup]);
 
   const toggleVoiceChat = useCallback(() => {
