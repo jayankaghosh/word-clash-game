@@ -4,6 +4,7 @@ import OfflineManager from '../utils/OfflineManager';
 
 function WelcomeScreen({ onCreateGame, onJoinGame, onPlayOffline, savedName, gameConfig }) {
   const [name, setName] = useState(savedName || '');
+  const [menu, setMenu] = useState('main'); // 'main', 'friend', 'offline'
   const [mode, setMode] = useState(''); // 'create' or 'join'
   const [gameCode, setGameCode] = useState('');
   const [rounds, setRounds] = useState(gameConfig?.defaultRounds || 5);
@@ -144,11 +145,11 @@ function WelcomeScreen({ onCreateGame, onJoinGame, onPlayOffline, savedName, gam
           />
         </div>
 
-        {!mode && (
+        {menu === 'main' && !mode && (
           <div className="space-y-3 pt-4">
             <button
               type="button"
-              onClick={() => setMode('create')}
+              onClick={() => setMenu('friend')}
               disabled={!isOnline}
               className={`w-full py-4 text-white font-bold rounded-lg transition-all transform flex items-center justify-center gap-2 ${
                 isOnline
@@ -157,24 +158,14 @@ function WelcomeScreen({ onCreateGame, onJoinGame, onPlayOffline, savedName, gam
               }`}
             >
               <Users className="w-5 h-5" />
-              Create New Game
+              Play vs Friend
             </button>
             <button
               type="button"
-              onClick={() => setMode('join')}
-              disabled={!isOnline}
-              className={`w-full py-4 text-white font-bold rounded-lg transition-all transform flex items-center justify-center gap-2 ${
-                isOnline
-                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 hover:scale-105'
-                  : 'bg-gray-500 cursor-not-allowed opacity-50'
-              }`}
-            >
-              <Swords className="w-5 h-5" />
-              Join Game
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('offline')}
+              onClick={() => {
+                setMenu('offline');
+                setMode('offline');
+              }}
               disabled={!dictionaryLoaded || loadingDictionary}
               className={`w-full py-4 text-white font-bold rounded-lg transition-all transform flex items-center justify-center gap-2 ${
                 dictionaryLoaded && !loadingDictionary
@@ -192,6 +183,34 @@ function WelcomeScreen({ onCreateGame, onJoinGame, onPlayOffline, savedName, gam
             >
               <HelpCircle className="w-5 h-5" />
               How to Play
+            </button>
+          </div>
+        )}
+
+        {menu === 'friend' && !mode && (
+          <div className="space-y-3 pt-4 slide-in">
+            <button
+              type="button"
+              onClick={() => setMode('create')}
+              className="w-full py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+            >
+              <Users className="w-5 h-5" />
+              Create New Game
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('join')}
+              className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+            >
+              <Swords className="w-5 h-5" />
+              Join Game
+            </button>
+            <button
+              type="button"
+              onClick={() => setMenu('main')}
+              className="w-full py-3 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-all border border-white/30"
+            >
+              ← Back
             </button>
           </div>
         )}
@@ -289,7 +308,10 @@ function WelcomeScreen({ onCreateGame, onJoinGame, onPlayOffline, savedName, gam
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setMode('')}
+                onClick={() => {
+                  setMode('');
+                  setMenu('friend');
+                }}
                 className="flex-1 py-3 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-all"
               >
                 Back
@@ -436,7 +458,10 @@ function WelcomeScreen({ onCreateGame, onJoinGame, onPlayOffline, savedName, gam
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setMode('')}
+                onClick={() => {
+                  setMode('');
+                  setMenu('main');
+                }}
                 className="flex-1 py-3 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-all"
               >
                 Back
@@ -469,7 +494,10 @@ function WelcomeScreen({ onCreateGame, onJoinGame, onPlayOffline, savedName, gam
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setMode('')}
+                onClick={() => {
+                  setMode('');
+                  setMenu('friend');
+                }}
                 className="flex-1 py-3 bg-white/10 text-white font-medium rounded-lg hover:bg-white/20 transition-all"
               >
                 Back
